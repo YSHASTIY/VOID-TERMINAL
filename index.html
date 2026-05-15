@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>VOID TERMINAL</title>
+    <title>VOID TERMINAL | RECONSTRUCTED</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
@@ -13,6 +13,7 @@
         body, html { margin: 0; padding: 0; background: var(--dark); color: #b0a090; font-family: 'Share Tech Mono', monospace; height: 100%; overflow: hidden; transition: transform 0.4s cubic-bezier(0.85, 0, 0.15, 1), opacity 0.4s; }
         
         .tv-off { transform: scaleY(0.005) scaleX(1.3); opacity: 0; }
+
         .crt-overlay { position: fixed; inset: 0; pointer-events: none; z-index: 1000; background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), radial-gradient(circle, transparent 40%, black 150%); background-size: 100% 4px, 100% 100%; }
         .scanline { position: fixed; top: 0; width: 100%; height: 100px; background: linear-gradient(0deg, transparent, rgba(138, 3, 3, 0.1), transparent); animation: moveScan 8s linear infinite; pointer-events: none; z-index: 1001; }
         @keyframes moveScan { from { top: -100px; } to { top: 100%; } }
@@ -23,20 +24,27 @@
         .logo { font-family: 'Bebas Neue'; font-size: clamp(40px, 10vw, 80px); color: var(--blood); text-shadow: 0 0 20px var(--blood); line-height: 0.8; text-align: center; margin-bottom: 20px; }
         .btn { font-family: 'Bebas Neue'; font-size: 22px; background: #1a0000; border: 2px solid var(--blood); color: var(--blood); padding: 10px; width: 100%; max-width: 300px; margin: 5px; transition: 0.2s; letter-spacing: 2px; z-index: 20; outline: none; }
         .btn:hover:not(:disabled) { background: var(--blood); color: #fff; box-shadow: 0 0 30px var(--blood); }
-        .btn.blue { border-color: var(--neon); color: var(--neon); }
-        .btn.blue:hover { background: var(--neon); color: #000; box-shadow: 0 0 30px var(--neon); }
+        
+        /* Синяя кнопка для одиночной игры */
+        .btn.blue { border-color: var(--neon); color: var(--neon); background: #000a1a; }
+        .btn.blue:hover:not(:disabled) { background: var(--neon); color: #000; box-shadow: 0 0 30px var(--neon); }
+        
         .btn:disabled { opacity: 0.1; }
         
         .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; width: 100%; max-width: 420px; aspect-ratio: 1/1; background: #111; padding: 6px; border: 1px solid #300; }
         .cell { background: #080000; border: 1px solid #222; display: flex; align-items: center; justify-content: center; text-align: center; font-size: clamp(6px, 1.8vw, 9px); color: #444; aspect-ratio: 1/1; overflow: hidden; padding: 2px; text-transform: uppercase; transition: 0.3s; }
-        .cell.p1 { background: var(--blood); color: #fff; border-color: #f00; }
-        .cell.p2 { background: #004; color: #fff; border-color: var(--neon); }
-        .cell.system { color: var(--blood); border: 1px dashed var(--blood); background: #1a0000; font-weight: bold; }
+        .cell.p1 { background: var(--blood); color: #fff; border-color: #f00; box-shadow: inset 0 0 10px #000; }
+        .cell.p2 { background: #004; color: #fff; border-color: var(--neon); box-shadow: inset 0 0 10px #000; }
+        .cell.system { color: var(--blood); border: 1px dashed var(--blood); font-weight: bold; opacity: 0.8; background: #1a0000; }
         
         .panel { background: var(--panel); border: 1px solid #400; padding: 15px; width: 280px; font-size: 13px; border-left: 4px solid var(--blood); }
         #rollVal { width: 60px; height: 60px; border: 2px solid var(--blood); display: flex; align-items: center; justify-content: center; font-family: 'Bebas Neue'; font-size: 32px; color: #f00; background: #000; }
-        #endScreen { position: fixed; inset: 0; background: #000; z-index: 5000; display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+        .lobby-list { width: 100%; max-width: 400px; height: 300px; overflow-y: auto; background: rgba(20,0,0,0.5); border: 1px solid #300; margin: 20px 0; padding: 10px; }
+        .lobby-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #200; color: var(--neon); font-size: 14px; }
         .input-dark { background:#000; border:1px solid #500; color:var(--neon); padding:15px; width:260px; text-align:center; font-size:20px; font-family:inherit; outline:none; margin-bottom:10px; text-transform: uppercase; }
+        
+        #endScreen { position: fixed; inset: 0; background: #000; z-index: 5000; display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+        .copy-chip { font-size: 10px; background: #222; color: #888; padding: 2px 6px; margin-left: 10px; border: 1px solid #444; cursor: pointer; }
     </style>
 </head>
 <body onclick="TerminalAudio.init()">
@@ -44,37 +52,55 @@
     <div class="crt-overlay"></div>
     <div class="scanline"></div>
 
+    <button style="position:fixed; top:20px; right:20px; z-index:2000; border:1px solid #444; background:#000; color:var(--neon); padding:5px 12px;" onclick="toggleLanguage()">RU / EN</button>
+
     <div id="scrMenu" class="screen active">
         <div class="logo">VOID<br>TERMINAL</div>
-        <button class="btn blue" onclick="startSinglePlayer()">ОДИНОЧНЫЙ СЕАНС</button>
-        <button class="btn" onclick="openNickPrompt('HOST')">СОЗДАТЬ ЛОББИ</button>
-        <button class="btn" onclick="switchScreen('scrJoin')">ПОДКЛЮЧИТЬСЯ</button>
+        <button class="btn blue" onclick="startSinglePlayer()" data-t="single">ОДИНОЧНЫЙ СЕАНС</button>
+        <button class="btn" onclick="openNickPrompt('HOST')" data-t="create">СОЗДАТЬ ЛОББИ</button>
+        <button class="btn" onclick="switchScreen('scrJoin')" data-t="join">ПОДКЛЮЧИТЬСЯ</button>
+        <button class="btn" onclick="openLobbyBrowser()" style="font-size: 16px; border-style: dotted;" data-t="list">СПИСОК ЛОББИ</button>
     </div>
 
     <div id="scrNick" class="screen">
+        <div class="logo" style="font-size: 30px;">IDENTITY REQUIRED</div>
         <input type="text" id="nickInput" maxlength="12" placeholder="NICKNAME..." class="input-dark">
         <button class="btn" id="confirmNickBtn">CONFIRM</button>
+        <button class="btn" style="border:none; color:#444" onclick="switchScreen('scrMenu')" data-t="back">НАЗАД</button>
     </div>
 
     <div id="scrJoin" class="screen">
         <input type="text" id="joinInput" maxlength="5" placeholder="CODE..." class="input-dark">
-        <button class="btn" onclick="openNickPrompt('JOIN')">ВОЙТИ</button>
+        <button class="btn" onclick="openNickPrompt('JOIN')" data-t="start">ВОЙТИ</button>
+        <button class="btn" style="border:none; color:#444" onclick="switchScreen('scrMenu')" data-t="back">НАЗАД</button>
+    </div>
+
+    <div id="scrLobby" class="screen">
+        <div class="logo" style="font-size: 40px;">ACTIVE NODES</div>
+        <div class="lobby-list" id="lobbyList"></div>
+        <button class="btn" onclick="switchScreen('scrMenu')" data-t="back">НАЗАД</button>
     </div>
 
     <div id="scrGame" class="screen">
         <div style="display:flex; gap:20px; flex-wrap:wrap; justify-content:center;">
             <div class="panel">
-                <div id="displayId" style="color: var(--neon); font-size: 14px;">ID: ...</div>
+                <div style="display:flex; justify-content: space-between; align-items: center;">
+                    <div id="displayId" style="color: var(--neon); font-size: 14px;">ID: ...</div>
+                    <span id="copyBtn" class="copy-chip" onclick="copyId()">COPY</span>
+                </div>
                 <div id="displayOpponent" style="color: #666; font-size: 11px; margin-top: 5px;">AWAITING...</div>
                 <hr style="border:0; border-top:1px solid #311; margin: 10px 0;">
-                <div id="tInstr" style="color:#888; line-height:1.6; font-size:11px;">
-                    1. Нажми КУРОК.<br>2. Выбери клетку в подсвеченной колонке.<br>3. Собери 5 в ряд (SYSTEM — общая клетка).
+                <b id="tProt" style="color:var(--blood)">ПРОТОКОЛ:</b>
+                <div id="tInstr" style="color:#888; margin-top:8px; line-height:1.6; font-size:11px;"></div>
+                <div id="tWarn" style="margin-top:14px; padding:10px; border:1px dashed #400; background:#0a0000; font-size:10px; line-height:1.7; color:#553333;">
+                    <span style="color:var(--blood); letter-spacing:2px;">&#x26A0; <span id="tWarnLabel"></span> &#x26A0;</span><br>
+                    <span id="tWarnText"></span>
                 </div>
             </div>
             <div style="display:flex; flex-direction:column; align-items:center;">
-                <div id="gameStatus" style="color: #f00; margin-bottom: 10px; font-family:'Special Elite'; height:20px;"></div>
+                <div id="gameStatus" style="color: #f00; margin-bottom: 10px; font-family:'Special Elite'; height: 20px;"></div>
                 <div style="display:flex; margin-bottom:10px; width:100%; gap:10px;">
-                    <button class="btn" id="rollBtn" style="margin:0; flex:1;" onclick="triggerRoll()">КУРОК</button>
+                    <button class="btn" id="rollBtn" style="margin:0; flex:1;" onclick="triggerRoll()" data-t="roll">КУРОК</button>
                     <div id="rollVal">—</div>
                 </div>
                 <div class="grid" id="mainGrid"></div>
@@ -84,57 +110,174 @@
 
     <div id="endScreen">
         <div id="endTitle" style="font-family:'Bebas Neue'; font-size:12vw; line-height:0.8;"></div>
-        <div id="endMsg" style="font-family:'Special Elite'; font-size:16px; color:#555; margin-top:20px;"></div>
+        <div id="endMsg" style="font-family:'Special Elite'; font-size:16px; color:#555; max-width:80%; margin-top:20px;"></div>
         <button class="btn" onclick="location.reload()" style="margin-top:40px;">REBOOT</button>
     </div>
 
     <script>
-        const WORDS = ["Гниль", "Трепанация", "Некроз", "Судороги", "Асфиксия", "Распад", "Паразит", "Токсин", "Гангрена", "Опухоль", "Пытка", "Ампутация", "Труп", "Кома", "Вирус", "Спазм", "Безумие", "Кадавр", "Агония", "Сепсис", "Психоз", "Морг", "Петля", "Бездна", "Пустота"];
+        const MASTER_WORDS_RU = ["Гниль", "Трепанация", "Метастаз", "Некроз", "Судороги", "Асфиксия", "Распад", "Паразит", "Инъекция", "Токсин", "Гангрена", "Плесень", "Опухоль", "Личинка", "Пытка", "Ампутация", "Рвота", "Шрам", "Гной", "Труп", "Кома", "Фантом", "Перелом", "Вирус", "Спазм", "Безумие", "Кадавр", "Слизь", "Мутация", "Агония", "Слепота", "Удушье", "Сепсис", "Амнезия", "Психоз", "Фобия", "Каннибал", "Морг", "Петля", "Бездна", "Пустота", "Эрозия", "Травма", "Шизофрения", "Паралич", "Невроз", "Кошмар", "Паника", "Тремор", "Обморок", "Заражение", "Тлен", "Ожог", "Галлюцинация", "Стигматы", "Ритуал", "Жертва", "Алтарь", "Проклятие", "Демон", "Мрак", "Тень", "Одержимость", "Шепот", "Скрежет", "Вопль", "Смерть", "Погребение", "Могила", "Склеп", "Саван", "Пепел", "Ужас", "Страх", "Боль", "Отчаяние", "Гнев", "Порок", "Грех", "Вина", "Палач", "Тиски", "Игла", "Скальпель", "Пила", "Крюк", "Цепь", "Клетка", "Подвал", "Чердак", "Лабиринт", "Зеркало", "Маска", "Лицо", "Глаза", "Зубы", "Когти", "Кость", "Кровь", "Плоть", "Кожа", "Волосы", "Нерв", "Мозг", "Сердце", "Легкие", "Почка", "Печень", "Желудок", "Кишечник", "Язва", "Нарыв", "Свищ", "Грыжа", "Отек", "Тромб", "Инфаркт", "Инсульт", "Рак", "Диагноз", "Рецидив", "Клиника", "Палата", "Изолятор", "Смирительная", "Лоботомия", "Электрошок", "Препарат", "Доза", "Яд", "Ртуть", "Кислота", "Щелочь", "Радиация", "Изотоп", "Мутант", "Гибрид", "Клон", "Орган", "Донор", "Трансплантат", "Имплант", "Протез", "Сенсор", "Чип", "Провод", "Ток", "Разряд", "Импульс", "Сигнал", "Шум", "Помеха", "Глюк", "Ошибка", "Сбой", "Отказ", "Крах", "Коллапс", "Взрыв", "Пламя", "Дым", "Газ", "Пыль", "Грязь", "Мусор", "Отходы", "Стоки", "Канализация", "Крыса", "Насекомое", "Паук", "Клещ", "Червь", "Пиявка", "Оса", "Рой", "Улей", "Гнездо", "Нора", "Ловушка", "Капкан", "Петля", "Узел", "Верёвка", "Нож", "Бритва", "Шило", "Топор", "Молот", "Гвоздь"];
+        const MASTER_WORDS_EN = ["Rot", "Trepanation", "Metastasis", "Necrosis", "Seizure", "Asphyxia", "Decay", "Parasite", "Injection", "Toxin", "Gangrene", "Mold", "Tumor", "Larva", "Torture", "Amputation", "Vomit", "Scar", "Pus", "Corpse", "Coma", "Phantom", "Fracture", "Virus", "Spasm", "Madness", "Cadaver", "Slime", "Mutation", "Agony", "Blindness", "Suffocation", "Sepsis", "Amnesia", "Psychosis", "Phobia", "Cannibal", "Morgue", "Noose", "Abyss", "Void", "Erosion", "Trauma", "Schizophrenia", "Paralysis", "Neurosis", "Nightmare", "Panic", "Tremor", "Fainting", "Infection", "Blight", "Burn", "Hallucination", "Stigmata", "Ritual", "Sacrifice", "Altar", "Curse", "Demon", "Gloom", "Shadow", "Possession", "Whisper", "Grind", "Scream", "Death", "Burial", "Grave", "Crypt", "Shroud", "Ash", "Horror", "Fear", "Pain", "Despair", "Wrath", "Vice", "Sin", "Guilt", "Hangman", "Vise", "Needle", "Scalpel", "Saw", "Hook", "Chain", "Cage", "Cellar", "Attic", "Maze", "Mirror", "Mask", "Face", "Eyes", "Teeth", "Claws", "Bone", "Blood", "Flesh", "Skin", "Hair", "Nerve", "Brain", "Heart", "Lungs", "Kidney", "Liver", "Stomach", "Intestine", "Ulcer", "Abscess", "Fistula", "Hernia", "Edema", "Thrombus", "Infarction", "Stroke", "Cancer", "Diagnosis", "Relapse", "Clinic", "Ward", "Isolator", "Straitjacket", "Lobotomy", "Electroshock", "Drug", "Dose", "Poison", "Mercury", "Acid", "Alkali", "Radiation", "Isotope", "Mutant", "Hybrid", "Clone", "Organ", "Donor", "Transplant", "Implant", "Prosthesis", "Sensor", "Chip", "Wire", "Current", "Discharge", "Impulse", "Signal", "Noise", "Glitch", "Error", "Fault", "Crash", "Collapse", "Explosion", "Flame", "Smoke", "Gas", "Dust", "Dirt", "Waste", "Sewage", "Rat", "Insect", "Spider", "Tick", "Worm", "Leech", "Wasp", "Swarm", "Hive", "Nest", "Burrow", "Trap", "Snare", "Knot", "Rope", "Knife", "Razor", "Awl", "Axe", "Hammer", "Nail"];
 
         const TerminalAudio = {
-            ctx: null, masterGain: null, pulseRate: 1800, currentGain: 0.6,
+            ctx: null, masterGain: null, ambientStarted: false, pulseRate: 1800,
             init() { 
                 if (this.ctx) return; 
                 this.ctx = new (window.AudioContext || window.webkitAudioContext)(); 
                 this.masterGain = this.ctx.createGain(); 
                 this.masterGain.connect(this.ctx.destination); 
-                this.masterGain.gain.value = 0.7;
+                this.masterGain.gain.value = 0.15;
                 this.startAmbient();
-                this.playHeart();
             },
+            
             startAmbient() {
+                if (this.ambientStarted) return;
+                this.ambientStarted = true;
                 const drone = this.ctx.createOscillator();
                 const dGain = this.ctx.createGain();
+                const filter = this.ctx.createBiquadFilter();
                 drone.type = 'sawtooth'; drone.frequency.value = 43.65;
-                dGain.gain.value = 0.1;
-                const f = this.ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 60;
-                drone.connect(f); f.connect(dGain); dGain.connect(this.masterGain);
+                filter.type = 'lowpass'; filter.frequency.value = 60;
+                dGain.gain.value = 0.07;
+                drone.connect(filter); filter.connect(dGain); dGain.connect(this.masterGain);
                 drone.start();
+                this.playHeart();
+                this.startDeepAmbient();
             },
+
             playHeart() {
                 const now = this.ctx.currentTime;
-                [0, 0.35].forEach((d, i) => {
-                    const o = this.ctx.createOscillator(); const g = this.ctx.createGain();
-                    o.frequency.setValueAtTime(i === 0 ? 55 : 45, now + d);
-                    o.frequency.exponentialRampToValueAtTime(0.01, now + d + 0.4);
-                    g.gain.setValueAtTime(0, now + d);
-                    g.gain.linearRampToValueAtTime(i === 0 ? this.currentGain : this.currentGain * 0.6, now + d + 0.05);
-                    g.gain.exponentialRampToValueAtTime(0.001, now + d + 0.4);
-                    o.connect(g); g.connect(this.masterGain); o.start(now + d); o.stop(now + d + 0.45);
+                [0, 0.35].forEach((delay, i) => {
+                    const osc = this.ctx.createOscillator();
+                    const g = this.ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(i === 0 ? 55 : 48, now + delay);
+                    osc.frequency.exponentialRampToValueAtTime(0.01, now + delay + 0.4);
+                    g.gain.setValueAtTime(0, now + delay);
+                    g.gain.linearRampToValueAtTime(i === 0 ? 0.75 : 0.55, now + delay + 0.05);
+                    g.gain.exponentialRampToValueAtTime(0.001, now + delay + 0.4);
+                    osc.connect(g); g.connect(this.masterGain);
+                    osc.start(now + delay); osc.stop(now + delay + 0.5);
                 });
                 setTimeout(() => this.playHeart(), this.pulseRate);
             },
-            update(occ) {
-                this.pulseRate = Math.max(400, 1800 - (occ * 70));
-                this.currentGain = 0.5 + (occ * 0.04);
+
+            startDeepAmbient() {
+                const bufferSize = this.ctx.sampleRate * 3;
+                const noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                const data = noiseBuffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+
+                const noiseSource = this.ctx.createBufferSource();
+                noiseSource.buffer = noiseBuffer;
+                noiseSource.loop = true;
+
+                const noiseFilter = this.ctx.createBiquadFilter();
+                noiseFilter.type = 'bandpass';
+                noiseFilter.frequency.value = 300;
+                noiseFilter.Q.value = 0.4;
+
+                const noiseGain = this.ctx.createGain();
+                noiseGain.gain.value = 0.02;
+
+                noiseSource.connect(noiseFilter);
+                noiseFilter.connect(noiseGain);
+                noiseGain.connect(this.masterGain);
+                noiseSource.start();
+
+                const lfoNoise = this.ctx.createOscillator();
+                const lfoNoiseGain = this.ctx.createGain();
+                lfoNoise.type = 'sine';
+                lfoNoise.frequency.value = 0.07;
+                lfoNoiseGain.gain.value = 200;
+                lfoNoise.connect(lfoNoiseGain);
+                lfoNoiseGain.connect(noiseFilter.frequency);
+                lfoNoise.start();
+
+                const shimmerOsc = this.ctx.createOscillator();
+                const shimmerGain = this.ctx.createGain();
+                shimmerOsc.type = 'sine';
+                shimmerOsc.frequency.value = 2847;
+                shimmerGain.gain.value = 0.008;
+
+                const lfoShimmer = this.ctx.createOscillator();
+                const lfoShimmerGain = this.ctx.createGain();
+                lfoShimmer.type = 'sine';
+                lfoShimmer.frequency.value = 0.13;
+                lfoShimmerGain.gain.value = 0.015;
+                lfoShimmer.connect(lfoShimmerGain);
+                lfoShimmerGain.connect(shimmerGain.gain);
+                lfoShimmer.start();
+
+                shimmerOsc.connect(shimmerGain);
+                shimmerGain.connect(this.masterGain);
+                shimmerOsc.start();
+
+                this.scheduleTerminalBeep();
             },
+
+            scheduleTerminalBeep() {
+                const delay = 8000 + Math.random() * 18000;
+                setTimeout(() => {
+                    if (!this.ctx) return;
+                    const now = this.ctx.currentTime;
+                    const osc = this.ctx.createOscillator();
+                    const g = this.ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.value = 440 + Math.random() * 320;
+                    g.gain.setValueAtTime(0, now);
+                    g.gain.linearRampToValueAtTime(0.018, now + 0.08);
+                    g.gain.setValueAtTime(0.018, now + 0.18);
+                    g.gain.linearRampToValueAtTime(0, now + 0.35);
+                    osc.connect(g);
+                    g.connect(this.masterGain);
+                    osc.start(now);
+                    osc.stop(now + 0.4);
+                    this.scheduleTerminalBeep();
+                }, delay);
+            },
+
+            updatePulse(occupancy) {
+                this.pulseRate = Math.max(500, 1800 - (occupancy * 50));
+            },
+
             playTvOff() {
-                const o = this.ctx.createOscillator(); const g = this.ctx.createGain();
-                o.frequency.setValueAtTime(800, this.ctx.currentTime);
-                o.frequency.exponentialRampToValueAtTime(15000, this.ctx.currentTime + 0.3);
-                g.gain.setValueAtTime(0.8, this.ctx.currentTime);
-                g.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.3);
-                o.connect(g); g.connect(this.masterGain); o.start(); o.stop(this.ctx.currentTime + 0.3);
+                if(!this.ctx) return;
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const g = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(800, now);
+                osc.frequency.exponentialRampToValueAtTime(14000, now + 0.3);
+                g.gain.setValueAtTime(0.3, now);
+                g.gain.exponentialRampToValueAtTime(0.0001, now + 0.35);
+                osc.connect(g); g.connect(this.masterGain);
+                osc.start(); osc.stop(now + 0.35);
+                
+                const click = this.ctx.createOscillator();
+                const cg = this.ctx.createGain();
+                click.type = 'square'; click.frequency.value = 60;
+                cg.gain.setValueAtTime(0.2, now);
+                cg.gain.linearRampToValueAtTime(0, now + 0.05);
+                click.connect(cg); cg.connect(this.masterGain);
+                click.start(); click.stop(now + 0.05);
+            },
+
+            playDataBurst() { 
+                if(!this.ctx) return; 
+                const o = this.ctx.createOscillator(); const g = this.ctx.createGain(); 
+                o.type = 'sawtooth'; o.frequency.value = 800; 
+                g.gain.setValueAtTime(0.01, this.ctx.currentTime); 
+                g.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.05); 
+                o.connect(g); g.connect(this.masterGain); o.start(); o.stop(this.ctx.currentTime + 0.05); 
+            },
+
+            playStatic() { 
+                if(!this.ctx) return; 
+                const o = this.ctx.createOscillator(); const g = this.ctx.createGain(); 
+                o.type = 'square'; o.frequency.value = 60; 
+                g.gain.setValueAtTime(0.05, this.ctx.currentTime); 
+                g.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.3); 
+                o.connect(g); g.connect(this.masterGain); o.start(); o.stop(this.ctx.currentTime + 0.3); 
             }
         };
 
@@ -142,131 +285,203 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        let gId = "", pNum = 1, gState = null, isBotMode = false, myNick = "";
+        let gId = "", pNum = 1, gState = null, lang = 'ru', isBotMode = false, sessionWords = [], myNick = localStorage.getItem('void_nick') || "";
+        const TEXTS = {
+            ru: { protocol: "ПРОТОКОЛ:", list: "СПИСОК ЛОББИ", single: "ОДИНОЧНЫЙ СЕАНС", create:"СОЗДАТЬ ЛОББИ", join:"ПОДКЛЮЧИТЬСЯ", start:"ВОЙТИ", back:"НАЗАД", roll:"КУРОК", your:"ТВОЙ ХОД", enemy:"ВРАГ ЦЕЛИТСЯ...", botTurn: "ТЕРМИНАЛ ДУМАЕТ...", winT:"ВЫЖИЛ", winM:"Система стабильна.", loseT:"СТЕРТ", loseM:"Утилизация завершена.", instr: "I. Нажми КУРОК — система назначит колонку.<br>II. Выбери клетку в подсвеченной колонке.<br>III. Выпало 6 — захвати любую клетку.<br>IV. Собери линию из 5 элементов (клетка SYSTEM является общей).<br>V. Проигравший стирается из реестра.", warnLabel: "ПРЕДУПРЕЖДЕНИЕ СИСТЕМЫ", warn: "Участие в сеансе фиксируется. Личность субъекта сохраняется в архиве до полного разложения данных. Попытка выхода расценивается как отказ от протокола. Отказ карается утилизацией.", system: "СИСТЕМА" },
+            en: { protocol: "PROTOCOL:", list: "LOBBY LIST", single: "SINGLE SESSION", create:"CREATE LOBBY", join:"CONNECT", start:"ENTER", back:"BACK", roll:"TRIGGER", your:"YOUR TURN", enemy:"ENEMY AIMING...", botTurn: "TERMINAL THINKING...", winT:"STABLE", winM:"Subject stable.", loseT:"ERASED", loseM:"Disposal complete.", instr: "I. Pull TRIGGER — system assigns a column.<br>II. Select a cell in the highlighted column.<br>III. Roll 6 — claim any cell freely.<br>IV. Form a line of 5 elements (SYSTEM cell is wild/shared).<br>V. The loser is purged from the registry.", warnLabel: "SYSTEM WARNING", warn: "Participation in this session is logged. Subject identity is retained in the archive until full data decomposition. Attempting to exit is treated as protocol refusal. Refusal is punishable by disposal.", system: "SYSTEM" }
+        };
 
         function switchScreen(s) { document.querySelectorAll('.screen').forEach(el => el.classList.remove('active')); document.getElementById(s).classList.add('active'); }
 
+        function renderInstructions() {
+            document.getElementById('tProt').innerText = TEXTS[lang].protocol;
+            document.getElementById('tInstr').innerHTML = TEXTS[lang].instr;
+            document.getElementById('tWarnLabel').innerText = TEXTS[lang].warnLabel;
+            document.getElementById('tWarnText').innerText = TEXTS[lang].warn;
+        }
+        
+        function toggleLanguage() { 
+            lang = lang === 'ru' ? 'en' : 'ru'; 
+            document.querySelectorAll('[data-t]').forEach(el => el.innerHTML = TEXTS[lang][el.getAttribute('data-t')] || el.innerText); 
+            renderInstructions();
+            if(gState) { drawGrid(); updateUI(); }
+        }
+
+        function copyId() { navigator.clipboard.writeText(gId); const chip = document.getElementById('copyBtn'); chip.innerText = "DONE"; setTimeout(() => chip.innerText = "COPY", 1000); }
+
         function openNickPrompt(mode) {
-            switchScreen('scrNick');
+            document.getElementById('nickInput').value = myNick; switchScreen('scrNick');
             document.getElementById('confirmNickBtn').onclick = () => {
-                myNick = document.getElementById('nickInput').value.toUpperCase() || "ANON";
-                if(mode === 'HOST') startHost(); else startJoin(document.getElementById('joinInput').value);
+                const val = document.getElementById('nickInput').value.trim().toUpperCase();
+                if(!val) return; myNick = val; localStorage.setItem('void_nick', myNick);
+                if(mode === 'HOST') startHost();
+                else if(mode === 'JOIN') startJoin(document.getElementById('joinInput').value);
             };
         }
 
+        function openLobbyBrowser() {
+            switchScreen('scrLobby'); const listEl = document.getElementById('lobbyList');
+            listEl.innerHTML = '<div style="text-align:center; padding:20px;">SCANNING...</div>';
+            db.ref('games').once('value', s => {
+                listEl.innerHTML = ''; const games = s.val(); let found = false;
+                for (let id in games) {
+                    if (games[id] && games[id].players === 1 && !games[id].winner) {
+                        found = true; const item = document.createElement('div');
+                        item.className = 'lobby-item';
+                        item.innerHTML = `<span>${games[id].p1Nick || 'ANON'} [${id}]</span><button class="btn" style="width:70px; font-size:12px; margin:0; padding:5px;" onclick="openNickPromptWithId('${id}')">JOIN</button>`;
+                        listEl.appendChild(item);
+                    }
+                }
+                if (!found) listEl.innerHTML = '<div style="text-align:center; padding:20px; color:#444;">NO ACTIVE NODES</div>';
+            });
+        }
+
+        function openNickPromptWithId(id) { document.getElementById('joinInput').value = id; openNickPrompt('JOIN'); }
+
         function startSinglePlayer() {
-            isBotMode = true; pNum = 1;
-            gState = { board: Array(25).fill(0), turn: 1, roll: 0, winner: 0, p1Nick: "YOU", p2Nick: "BOT" };
-            gState.board[12] = 3; switchScreen('scrGame'); updateUI(); drawGrid();
+            isBotMode = true; pNum = 1; gId = "OFFLINE"; 
+            const sourceWords = lang === 'ru' ? MASTER_WORDS_RU : MASTER_WORDS_EN;
+            sessionWords = [...sourceWords].sort(() => 0.5 - Math.random()).slice(0, 25);
+            gState = { board: Array(25).fill(0), turn: 1, roll: 0, players: 2, winner: 0, words: sessionWords, p1Nick: "YOU", p2Nick: "BOT" };
+            gState.board[12] = 3; 
+            switchScreen('scrGame'); document.getElementById('copyBtn').style.display = 'none';
+            document.getElementById('displayOpponent').innerText = gState.p2Nick;
+            renderInstructions(); drawGrid(); updateUI();
         }
 
         function startHost() {
-            gId = Math.random().toString(36).substring(2, 7).toUpperCase();
-            gState = { board: Array(25).fill(0), turn: 1, roll: 0, winner: 0, p1Nick: myNick, p2Nick: "", players: 1 };
-            gState.board[12] = 3; db.ref('games/' + gId).set(gState).then(() => listen());
+            isBotMode = false; gId = Math.random().toString(36).substring(2, 7).toUpperCase(); pNum = 1; 
+            const sourceWords = lang === 'ru' ? MASTER_WORDS_RU : MASTER_WORDS_EN;
+            sessionWords = [...sourceWords].sort(() => 0.5 - Math.random()).slice(0, 25);
+            const data = { board: Array(25).fill(0), turn: 1, roll: 0, players: 1, winner: 0, words: sessionWords, p1Nick: myNick, p2Nick: "" };
+            data.board[12] = 3; 
+            db.ref('games/' + gId).set(data).then(() => listen());
+            document.getElementById('copyBtn').style.display = 'block';
         }
 
         function startJoin(id) {
-            gId = id.toUpperCase(); pNum = 2;
-            db.ref('games/' + gId).once('value', s => {
-                if(s.exists()) { db.ref('games/' + gId).update({ players: 2, p2Nick: myNick }); listen(); }
+            if(!id) return; gId = id.toUpperCase(); pNum = 2;
+            db.ref('games/' + gId).once('value', s => { 
+                if(s.exists()){ db.ref('games/' + gId).update({ players: 2, p2Nick: myNick }); listen(); } 
             });
         }
 
         function listen() {
-            switchScreen('scrGame'); document.getElementById('displayId').innerText = "ID: " + gId;
+            switchScreen('scrGame'); renderInstructions(); document.getElementById('displayId').innerText = "SESSION: " + gId;
             db.ref('games/' + gId).on('value', s => {
-                const data = s.val(); if(!data) return;
-                gState = data;
-                TerminalAudio.update(gState.board.filter(v => v !== 0).length);
-                if(gState.winner) showEnd(gState.winner === pNum);
+                gState = s.val(); if(!gState) return; sessionWords = gState.words; 
+                document.getElementById('displayOpponent').innerText = pNum === 1 ? (gState.p2Nick || "WAITING...") : gState.p1Nick;
+                
+                const occupiedCount = gState.board.filter(v => v !== 0).length;
+                TerminalAudio.updatePulse(occupiedCount);
+                
                 drawGrid(); updateUI();
+                if(gState.winner) showEnd(gState.winner === pNum);
             });
         }
 
-        function checkWin(b) {
-            const lines = [[0,1,2,3,4],[5,6,7,8,9],[10,11,12,13,14],[15,16,17,18,19],[20,21,22,23,24],[0,5,10,15,20],[1,6,11,16,21],[2,7,12,17,22],[3,8,13,18,23],[4,9,14,19,24],[0,6,12,18,24],[4,8,12,16,20]];
-            for (let player of [1, 2]) {
-                if (lines.some(l => l.every(i => b[i] === player || b[i] === 3))) return player;
-            }
-            return 0;
-        }
-
         function triggerRoll() {
-            const r = Math.floor(Math.random() * 6) + 1;
-            if(isBotMode) { gState.roll = r; updateUI(); drawGrid(); if(gState.turn === 2) setTimeout(botDecision, 800); }
-            else { db.ref('games/' + gId).update({ roll: r }); }
+            TerminalAudio.playStatic(); const r = Math.floor(Math.random() * 6) + 1;
+            if(isBotMode) { 
+                gState.roll = r; updateUI(); drawGrid();
+                if(gState.turn === 2) setTimeout(botDecision, 800); 
+            } else { db.ref('games/' + gId).update({ roll: r }); }
         }
 
         function occupy(i) {
-            if(gState.turn !== pNum || gState.roll === 0 || gState.board[i] !== 0) return;
+            if(gState.turn !== pNum || !gState.roll || gState.board[i] !== 0) return;
             if(gState.roll !== 6 && (i % 5) !== (gState.roll - 1)) return;
+            TerminalAudio.playDataBurst();
+            gState.board[i] = pNum; gState.roll = 0;
             
-            gState.board[i] = pNum;
-            const winPlayer = checkWin(gState.board);
+            if(checkWin(gState.board)) gState.winner = pNum;
+            else gState.turn = isBotMode ? 2 : (pNum === 1 ? 2 : 1);
             
-            if(winPlayer) {
-                gState.winner = winPlayer;
-                gState.roll = 0;
-            } else {
-                gState.turn = isBotMode ? 2 : (pNum === 1 ? 2 : 1);
-                gState.roll = 0;
-            }
-
-            if(isBotMode) {
+            if(isBotMode) { 
+                const count = gState.board.filter(v => v !== 0).length;
+                TerminalAudio.updatePulse(count);
                 drawGrid(); updateUI();
-                if(gState.winner) showEnd(gState.winner === pNum);
-                else if(gState.turn === 2) setTimeout(botDecision, 800);
-            } else {
-                db.ref('games/' + gId).set(gState);
-            }
+                if(gState.winner) { showEnd(gState.winner === pNum); return; }
+                if(gState.turn === 2) setTimeout(botMove, 600); 
+            } else { db.ref('games/' + gId).update(gState); }
         }
+
+        function botMove() { if(!isBotMode || gState.winner || gState.turn !== 2) return; triggerRoll(); }
 
         function botDecision() {
             let moves = [];
-            gState.board.forEach((v, idx) => { if(v === 0 && (gState.roll === 6 || idx % 5 === gState.roll - 1)) moves.push(idx); });
-            if(moves.length) gState.board[moves[Math.floor(Math.random()*moves.length)]] = 2;
-            
-            const winPlayer = checkWin(gState.board);
-            if(winPlayer) gState.winner = winPlayer;
+            gState.board.forEach((v, idx) => { if(v === 0 && (gState.roll === 6 || (idx % 5 === gState.roll - 1))) moves.push(idx); });
+            if(moves.length > 0) {
+                let best = moves[0]; let maxS = -1;
+                moves.forEach(m => {
+                    let s = 0;
+                    let bW = [...gState.board]; bW[m] = 2; if(checkWin(bW)) s += 100;
+                    let bB = [...gState.board]; bB[m] = 1; if(checkWin(bB)) s += 50;
+                    if(s > maxS) { maxS = s; best = m; }
+                });
+                gState.board[best] = 2; TerminalAudio.playDataBurst();
+            }
+            if(checkWin(gState.board)) gState.winner = 2;
             else { gState.turn = 1; gState.roll = 0; }
-            
             drawGrid(); updateUI();
             if(gState.winner) showEnd(gState.winner === pNum);
+        }
+
+        function checkWin(b) {
+            const wins = [
+                [0,1,2,3,4],[5,6,7,8,9],[10,11,12,13,14],[15,16,17,18,19],[20,21,22,23,24],
+                [0,5,10,15,20],[1,6,11,16,21],[2,7,12,17,22],[3,8,13,18,23],[4,9,14,19,24],
+                [0,6,12,18,24],[4,8,12,16,20]
+            ];
+            
+            for (let player of [1, 2]) {
+                const hasWin = wins.some(w => {
+                    return w.every(idx => {
+                        return b[idx] === player || b[idx] === 3;
+                    });
+                });
+                if (hasWin) return true;
+            }
+            return false;
         }
 
         function drawGrid() {
             const g = document.getElementById('mainGrid'); g.innerHTML = '';
             gState.board.forEach((v, i) => {
-                const c = document.createElement('div');
-                c.className = 'cell' + (v===1?' p1':v===2?' p2':v===3?' system':'');
-                c.innerText = v === 3 ? "SYSTEM" : WORDS[i];
-                if(v === 0 && gState.turn === pNum && gState.roll !== 0) {
-                    if(gState.roll === 6 || i % 5 === gState.roll - 1) c.style.borderColor = "#fff";
+                const cell = document.createElement('div');
+                cell.className = 'cell' + (v===1?' p1':v===2?' p2':v===3?' system':'');
+                if (gState.turn === pNum && gState.roll !== 0 && v === 0) {
+                    if (gState.roll === 6 || (i % 5 === gState.roll - 1)) {
+                        cell.style.borderColor = '#fff'; cell.style.boxShadow = 'inset 0 0 8px rgba(255,255,255,0.3)';
+                    }
                 }
-                if(v === 0) c.onclick = () => occupy(i);
-                g.appendChild(c);
+                cell.innerText = v === 3 ? TEXTS[lang].system : sessionWords[i];
+                if(v === 0) cell.onclick = () => occupy(i); g.appendChild(cell);
             });
         }
 
         function updateUI() {
-            const my = gState.turn === pNum;
-            document.getElementById('gameStatus').innerText = gState.turn === 2 && isBotMode ? "ТЕРМИНАЛ ДУМАЕТ..." : (my ? "ТВОЙ ХОД" : "ВРАГ ЦЕЛИТСЯ...");
-            document.getElementById('rollBtn').disabled = !my || gState.roll !== 0 || (gState.players < 2 && !isBotMode);
+            const isMy = gState.turn === pNum;
+            document.getElementById('gameStatus').innerText = isBotMode && gState.turn === 2 ? TEXTS[lang].botTurn : (isMy ? TEXTS[lang].your : TEXTS[lang].enemy);
+            document.getElementById('rollBtn').disabled = !isMy || gState.roll !== 0 || (gState.players < 2 && !isBotMode);
             document.getElementById('rollVal').innerText = gState.roll || "—";
         }
 
-        function showEnd(win) {
-            if(!win) { 
-                TerminalAudio.playTvOff(); document.body.classList.add('tv-off'); 
-                setTimeout(() => { document.body.classList.remove('tv-off'); finalize(win); }, 500);
-            } else finalize(win);
+        function showEnd(isWin) {
+            if (!isWin) {
+                TerminalAudio.playTvOff();
+                document.body.classList.add('tv-off');
+                setTimeout(() => {
+                    document.body.classList.remove('tv-off');
+                    renderFinal(isWin);
+                }, 600);
+            } else { renderFinal(isWin); }
         }
 
-        function finalize(win) {
-            document.getElementById('endTitle').innerText = win ? "ВЫЖИЛ" : "СТЕРТ";
-            document.getElementById('endTitle').style.color = win ? "#0af" : "#f00";
-            document.getElementById('endMsg').innerText = win ? "Система стабильна." : "Утилизация завершена.";
+        function renderFinal(isWin) {
+            document.getElementById('endTitle').innerText = isWin ? TEXTS[lang].winT : TEXTS[lang].loseT;
+            document.getElementById('endTitle').style.color = isWin ? "#0af" : "#f00";
+            document.getElementById('endMsg').innerText = isWin ? TEXTS[lang].winM : TEXTS[lang].loseM;
             switchScreen('endScreen'); document.getElementById('endScreen').style.display = 'flex';
         }
     </script>
