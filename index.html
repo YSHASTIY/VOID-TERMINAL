@@ -3,285 +3,319 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>DEAD MAN BINGO | MULTIPLAYER</title>
+  <title>DEAD MAN BINGO | PROTOCOL ERROR</title>
   <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Special+Elite&family=Bebas+Neue&family=Share+Tech+Mono&display=swap');
 
-    * { box-sizing: border-box; cursor: crosshair; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
-    html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; color: #b0a090; font-family: 'Share Tech Mono', monospace; overflow: hidden; }
+    :root {
+      --blood: #8a0303;
+      --rust: #3d1a1a;
+      --text: #b0a090;
+      --neon: #f00;
+    }
 
-    .screen-layer { display: none; width: 100vw; height: 100vh; position: absolute; inset: 0; background: radial-gradient(circle, #1a0505 0%, #050000 100%); overflow-y: auto; padding: 20px; }
-    .screen-layer.active { display: flex; flex-direction: column; align-items: center; }
+    * { box-sizing: border-box; cursor: crosshair; user-select: none; -webkit-user-select: none; }
+    
+    html, body { 
+      margin: 0; padding: 0; width: 100%; height: 100%; 
+      background: #050000; color: var(--text); 
+      font-family: 'Share Tech Mono', monospace; overflow: hidden; 
+    }
+
+    /* Фоновые помехи и кровь */
+    .noise-bg {
+      position: fixed; inset: 0;
+      background: url('https://www.transparenttextures.com/patterns/asfalt-dark.png'),
+                  radial-gradient(circle at center, #1a0505 0%, #000 100%);
+      opacity: 0.8; z-index: -1;
+    }
+
+    .blood-stain {
+      position: fixed; width: 300px; height: 300px;
+      background: radial-gradient(circle, rgba(138,3,3,0.2) 0%, transparent 70%);
+      filter: blur(40px); pointer-events: none; z-index: -1;
+    }
 
     .crt-overlay::before {
       content: " "; display: block; position: fixed; inset: 0;
-      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.2) 50%);
+      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%);
       z-index: 100; background-size: 100% 4px; pointer-events: none;
+      animation: flicker 0.15s infinite;
     }
 
-    .menu-container { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100%; text-align: center; gap: 15px; width: 100%; max-width: 400px; }
-    .menu-title { font-family: 'Bebas Neue'; font-size: clamp(50px, 15vw, 90px); color: #f00; text-shadow: 0 0 20px #f00; line-height: 0.8; margin-bottom: 25px; }
+    @keyframes flicker {
+      0% { opacity: 0.9; } 50% { opacity: 1; } 100% { opacity: 0.9; }
+    }
+
+    /* Экраны */
+    .screen { display: none; width: 100vw; height: 100vh; position: absolute; inset: 0; padding: 20px; overflow-y: auto; }
+    .screen.active { display: flex; flex-direction: column; align-items: center; }
+
+    /* Меню и кнопки */
+    .menu-container { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100%; gap: 20px; width: 100%; max-width: 450px; }
     
-    .menu-btn {
-      font-family: 'Bebas Neue'; font-size: 26px; background: #200; border: 2px solid #600; color: #f00;
-      padding: 15px; width: 100%; transition: 0.2s; text-transform: uppercase; letter-spacing: 2px;
-      outline: none;
+    .logo { font-family: 'Bebas Neue'; font-size: clamp(60px, 18vw, 110px); color: var(--blood); text-shadow: 0 0 30px var(--blood); line-height: 0.85; text-align: center; margin-bottom: 30px; animation: pulse 2s infinite; }
+    
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); filter: brightness(1); }
+      50% { transform: scale(1.02); filter: brightness(1.3); }
     }
-    .menu-btn:not(:disabled):active { transform: scale(0.95); background: #600; color: #fff; }
-    .menu-btn:disabled { opacity: 0.2; border-color: #333; color: #444; }
 
-    .id-card { width: 100%; background: rgba(0,0,0,0.8); border: 1px solid #333; padding: 15px; margin-bottom: 20px; text-align: center; }
-    #roomDisplay { font-family: 'Bebas Neue'; font-size: 32px; color: #0af; cursor: pointer; letter-spacing: 2px; margin: 5px 0; word-break: break-all; }
-    #copyStatus { font-size: 10px; color: #0f0; opacity: 0; transition: 0.3s; height: 12px; }
+    .btn {
+      font-family: 'Bebas Neue'; font-size: 28px; background: #1a0000; border: 2px solid var(--blood); color: var(--blood);
+      padding: 18px; width: 100%; transition: 0.3s; letter-spacing: 3px; box-shadow: inset 0 0 15px rgba(138,3,3,0.3);
+    }
+    .btn:hover:not(:disabled) { background: var(--blood); color: #fff; box-shadow: 0 0 25px var(--blood); }
+    .btn:disabled { opacity: 0.3; border-color: #333; color: #444; }
 
-    .status-panel { background: rgba(0,0,0,0.9); border: 1px solid #311; padding: 12px; margin-bottom: 15px; font-family: 'Special Elite'; font-size: 14px; color: #844; min-height: 60px; text-align: center; display: flex; align-items: center; justify-content: center; }
-    .br-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; aspect-ratio: 1/1; margin-bottom: 15px; width: 100%; }
-    .br-cell { background: rgba(15,5,5,0.95); border: 1px solid #322; font-size: clamp(8px, 2.8vw, 11px); display: flex; align-items: center; justify-content: center; text-align: center; aspect-ratio: 1/1; padding: 3px; color: #554; }
-    .br-cell.p1-mark { background: #600; color: #fff; text-decoration: line-through; box-shadow: inset 0 0 10px #f00; border-color: #f00; }
-    .br-cell.p2-mark { background: #006; color: #fff; text-decoration: line-through; box-shadow: inset 0 0 10px #0af; border-color: #0af; }
-    .br-cell.free { color: #f00; border: 1px dashed #f00; font-weight: bold; }
+    /* Лобби информация */
+    .info-box { background: rgba(20,0,0,0.8); border: 1px solid #400; padding: 20px; width: 100%; font-size: 13px; color: #644; line-height: 1.5; border-left: 5px solid var(--blood); }
+    .id-display-large { 
+      font-family: 'Bebas Neue'; font-size: 40px; color: #0af; cursor: pointer; 
+      border: 1px dashed #056; padding: 10px; margin: 15px 0; width: 100%; text-align: center;
+      text-shadow: 0 0 15px rgba(0,170,255,0.4);
+    }
 
-    .controls-row { display: flex; gap: 10px; margin-bottom: 10px; height: 60px; width: 100%; }
-    #dieDisplay { width: 80px; background: #000; border: 2px solid #600; display: flex; align-items: center; justify-content: center; font-size: 32px; color: #f00; font-family: 'Bebas Neue'; }
+    /* Сетка Бинго */
+    .game-ui { width: 100%; max-width: 550px; }
+    .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; aspect-ratio: 1/1; margin: 20px 0; }
+    .cell { 
+      background: rgba(10,0,0,0.9); border: 1px solid #311; position: relative;
+      font-size: clamp(8px, 2.8vw, 12px); display: flex; align-items: center; 
+      justify-content: center; text-align: center; aspect-ratio: 1/1; padding: 4px;
+      color: #755; transition: 0.2s;
+    }
+    .cell.p1 { background: #500; color: #fff; text-decoration: line-through; border-color: #f00; box-shadow: inset 0 0 15px #000; }
+    .cell.p2 { background: #004; color: #fff; text-decoration: line-through; border-color: #0af; box-shadow: inset 0 0 15px #000; }
+    .cell.free { color: var(--blood); border: 1px dashed var(--blood); font-weight: bold; animation: glow-red 1s infinite; }
+    
+    @keyframes glow-red { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
 
-    #deathOverlay { display: none; position: fixed; inset: 0; background: #000; z-index: 1000; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px; }
+    .status-bar { height: 60px; background: #000; border: 1px solid #222; display: flex; align-items: center; justify-content: center; font-family: 'Special Elite'; color: #844; padding: 10px; text-align: center; }
+
+    #deathOverlay { display: none; position: fixed; inset: 0; background: #000; z-index: 1000; flex-direction: column; align-items: center; justify-content: center; }
   </style>
 </head>
 <body class="crt-overlay">
+  <div class="noise-bg"></div>
+  <div class="blood-stain" style="top:-50px; left:-50px;"></div>
+  <div class="blood-stain" style="bottom:-50px; right:-50px;"></div>
 
-  <div id="screenMenu" class="screen-layer active">
+  <div id="screenMenu" class="screen active">
     <div class="menu-container">
-      <h1 class="menu-title">DEAD MAN<br><span style="font-size: 0.5em; color: #444;">TERMINAL</span></h1>
-      <button class="menu-btn" id="hostBtn" onclick="startHost()">Создать Лобби</button>
-      <button class="menu-btn" onclick="switchScreen('screenBrowse')">Присоединиться</button>
+      <div class="logo">DEAD MAN<br>BINGO</div>
+      
+      <div class="info-box">
+        <strong>ПРОТОКОЛ ВЫЖИВАНИЯ:</strong><br>
+        1. Создайте канал или введите ID жертвы.<br>
+        2. Курок (Roll) определяет колонку (1-5).<br>
+        3. Число 6 — выстрел в любую цель.<br>
+        4. Пять меток в ряд — конец эксперимента.
+      </div>
+
+      <button class="btn" id="btnHost" onclick="startHost()">ГЕНЕРИРОВАТЬ КАНАЛ</button>
+      <button class="btn" onclick="switchScreen('screenBrowse')">ПОДКЛЮЧИТЬСЯ</button>
     </div>
   </div>
 
-  <div id="screenBrowse" class="screen-layer">
+  <div id="screenBrowse" class="screen">
     <div class="menu-container">
-      <h2 style="font-family: 'Bebas Neue'; color: #600;">ВХОД В СИСТЕМУ</h2>
-      <input type="text" id="joinInput" placeholder="ВВЕДИТЕ ID..." style="background:#000; border:1px solid #400; color:#0af; padding:15px; width:100%; font-family:inherit; text-align:center; font-size: 20px; margin-bottom:10px; outline: none;">
-      <button class="menu-btn" onclick="joinRoom()">Установить связь</button>
-      <button class="menu-btn" style="background:transparent; border:none; color:#444; font-size: 16px;" onclick="switchScreen('screenMenu')">Назад</button>
+      <h2 style="font-family: 'Bebas Neue'; color: #8a0303; font-size: 40px;">ПОИСК ЖЕРТВЫ</h2>
+      <input type="text" id="joinInput" placeholder="КОД ТЕРМИНАЛА..." style="background:#000; border:2px solid #400; color:#0af; padding:20px; width:100%; font-family:inherit; text-align:center; font-size: 24px; outline: none; margin-bottom: 20px;">
+      <button class="btn" onclick="joinRoom()">УСТАНОВИТЬ СВЯЗЬ</button>
+      <button class="btn" style="border:none; color:#444; font-size: 16px;" onclick="switchScreen('screenMenu')">НАЗАД</button>
     </div>
   </div>
 
-  <div id="screenGame" class="screen-layer">
-    <div style="width: 100%; max-width: 500px;">
-      <div class="id-card">
-        <div style="font-size: 9px; color: #444; letter-spacing: 2px;">ID ТЕРМИНАЛА (НАЖМИ ДЛЯ КОПИРОВАНИЯ)</div>
-        <div id="roomDisplay" onclick="copyRoomId()">ГЕНЕРАЦИЯ...</div>
-        <div id="copyStatus">СКОПИРОВАНО</div>
+  <div id="screenGame" class="screen">
+    <div class="game-ui">
+      <div style="display: flex; justify-content: space-between; align-items: flex-end;">
+        <div id="playerTag" style="font-family: 'Bebas Neue'; font-size: 22px; color: #444;">ID: LOADING...</div>
+        <div id="turnDot" style="color: #f00; font-size: 24px;">●</div>
+      </div>
+      
+      <div id="roomId" class="id-display-large" onclick="copyId()">...</div>
+      <div id="copyHint" style="text-align:center; font-size: 10px; color: #0f0; opacity: 0; margin-top: -10px; margin-bottom: 10px;">СКОПИРОВАНО</div>
+
+      <div class="status-bar" id="statusMsg">ОЖИДАНИЕ СИГНАЛА...</div>
+
+      <div style="display: flex; gap: 10px; margin: 15px 0;">
+        <button class="btn" id="rollBtn" onclick="gameAction('roll')" disabled>СПУСТИТЬ КУРОК</button>
+        <div id="rollRes" style="width: 80px; height: 68px; background: #1a0000; border: 2px solid var(--blood); display: flex; align-items:center; justify-content:center; font-family: 'Bebas Neue'; font-size: 35px; color: #f00;">—</div>
       </div>
 
-      <div style="display: flex; justify-content: space-between; font-family: 'Bebas Neue'; font-size: 20px; margin-bottom: 10px;">
-        <div id="playerTag" style="color: #444;">ЗАГРУЗКА...</div>
-        <div id="turnIndicator" style="color: #f00;">●</div>
-      </div>
-
-      <div class="status-panel" id="statusText">ОЖИДАНИЕ ВТОРОГО ПАЦИЕНТА...</div>
-
-      <div class="controls-row">
-        <button class="menu-btn" id="triggerBtn" onclick="sendAction('roll')" disabled>СПУСТИТЬ КУРОК</button>
-        <div id="dieDisplay">—</div>
-      </div>
-
-      <div class="br-grid" id="bingoGrid"></div>
+      <div class="grid" id="grid"></div>
     </div>
   </div>
 
   <div id="deathOverlay">
-    <h1 style="font-family: 'Bebas Neue'; font-size: 15vw; color: #f00;" id="deathTitle">ERASED</h1>
-    <p style="color: #600; font-family: 'Special Elite'; margin-bottom: 40px;">ПРОТОКОЛ ЗАВЕРШЕН</p>
-    <button class="menu-btn" onclick="location.reload()" style="max-width: 300px;">В МЕНЮ</button>
+    <div style="color: #f00; font-family: 'Bebas Neue'; font-size: 80px; line-height: 0.8;" id="deathTitle">ERASED</div>
+    <div style="color: #444; margin: 20px 0 40px;" id="deathSub">ЛИНИЯ СУДЬБЫ ПРЕРВАНА</div>
+    <button class="btn" onclick="location.reload()" style="max-width: 300px;">В МЕНЮ</button>
   </div>
 
 <script>
 let peer, conn;
-let myRole = null; 
-let isMyTurn = false;
-let gameState = { marked: Array.from({length:5},()=>Array(5).fill(0)), lastRoll: null, curP: 1 };
-gameState.marked[2][2] = 3;
+let role = null;
+let turn = false;
+let state = { board: Array.from({length:5},()=>Array(5).fill(0)), roll: null, activeP: 1 };
+state.board[2][2] = 3;
 
-const CELLS = [
-  ['САДИЗМ','ТРЕВОГА','SELF-HARM','ДИАБЕТ','ОТКАЗ СЕРДЦА'],
-  ['ТОКСИЧНОСТЬ','АГРЕССИЯ','ВЫГОРАНИЕ','ИГНОР БОЛИ','ХРОНИКА'],
-  ['НАСИЛИЕ','ЗАКОН','★ ОБРЕЧЕН ★','БЕССОНИЦА','ЗАВИСИМОСТЬ'],
-  ['ИЗОЛЯЦИЯ','ПЬЯНСТВО','ЖОР','ПАНИКА','ПАРАНОЙЯ'],
-  ['НАРКОТИКИ','КУРЕНИЕ','БРЕД','ДОЛГИ','ДЕПРЕССИЯ']
+const WORDS = [
+  ['САДИЗМ','ТРЕВОГА','SELF-HARM','ДИАБЕТ','ОТКАЗ'],
+  ['ЯДЫ','АГРЕССИЯ','ВЫГОРАНИЕ','БОЛЬ','ШРАМЫ'],
+  ['МОРГ','ЗАКОН','★ ОБРЕЧЕН ★','БЕССОНИЦА','УЖАС'],
+  ['ИЗОЛЯЦИЯ','ПЬЯНСТВО','ЖОР','ПАНИКА','ФОБИЯ'],
+  ['ПЫТКИ','ТЛЕН','БРЕД','ДОЛГИ','АГОНИЯ']
 ];
 
-function switchScreen(id) {
-  document.querySelectorAll('.screen-layer').forEach(s => s.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
+function switchScreen(s) {
+  document.querySelectorAll('.screen').forEach(e => e.classList.remove('active'));
+  document.getElementById(s).classList.add('active');
 }
 
-function copyRoomId() {
-  const id = document.getElementById('roomDisplay').textContent;
-  if (id && id !== "ГЕНЕРАЦИЯ...") {
-    navigator.clipboard.writeText(id);
-    const status = document.getElementById('copyStatus');
-    status.style.opacity = "1";
-    setTimeout(() => status.style.opacity = "0", 2000);
+function copyId() {
+  const t = document.getElementById('roomId').innerText;
+  if(t && t !== '...') {
+    navigator.clipboard.writeText(t);
+    document.getElementById('copyHint').style.opacity = 1;
+    setTimeout(()=> document.getElementById('copyHint').style.opacity = 0, 2000);
   }
 }
 
-// Настройки для GitHub Pages (HTTPS)
-const PEER_CONFIG = {
-  debug: 2,
-  config: {
-    'iceServers': [
-      { urls: 'stun:stun.l.google.com:19302' },
-      { urls: 'stun:stun1.l.google.com:19302' }
-    ]
-  }
-};
+// Конфигурация для обхода NAT
+const CFG = { config: { 'iceServers': [{ urls: 'stun:stun.l.google.com:19302' }] } };
 
-function initPeer(callback) {
-  if (peer) peer.destroy();
-  
-  // Явно указываем, что работаем через защищенный канал, если мы на HTTPS
-  peer = new Peer(PEER_CONFIG);
-  
-  peer.on('open', (id) => {
-    document.getElementById('roomDisplay').textContent = id;
-    if (callback) callback(id);
+function initPeer(cb) {
+  peer = new Peer(CFG);
+  peer.on('open', id => {
+    document.getElementById('roomId').innerText = id;
+    cb(id);
   });
-
-  peer.on('connection', (c) => {
+  peer.on('connection', c => {
     conn = c;
-    setupConn();
-    if (myRole === 'host') {
-      gameState.curP = Math.random() > 0.5 ? 1 : 2;
-      setTimeout(sync, 1000);
-    }
+    handleConn();
   });
-
-  peer.on('error', (err) => {
-    console.error('PeerJS Error:', err.type);
-    if(err.type === 'peer-unavailable') alert("Лобби не найдено.");
-    else if(err.type === 'network') alert("Ошибка сети. Проверьте интернет.");
-    else alert("Ошибка связи: " + err.type);
-    location.reload();
-  });
+  peer.on('error', e => { alert("Ошибка: " + e.type); location.reload(); });
 }
 
 function startHost() {
-  myRole = 'host';
-  const btn = document.getElementById('hostBtn');
-  btn.disabled = true;
-  btn.textContent = "УСТАНОВКА...";
-  
+  role = 'host';
+  document.getElementById('btnHost').disabled = true;
+  document.getElementById('btnHost').innerText = "ОЖИДАНИЕ...";
   initPeer(() => {
     switchScreen('screenGame');
-    document.getElementById('playerTag').textContent = "СУБЪЕКТ 01 (ХОСТ)";
+    document.getElementById('playerTag').innerText = "ПАЦИЕНТ 01 (ХОСТ)";
     render();
   });
 }
 
 function joinRoom() {
   const id = document.getElementById('joinInput').value.trim();
-  if (!id) return;
-  myRole = 'guest';
-  
+  if(!id) return;
+  role = 'guest';
   initPeer(() => {
-    conn = peer.connect(id, { reliable: true });
-    document.getElementById('roomDisplay').textContent = id;
+    conn = peer.connect(id);
+    document.getElementById('roomId').innerText = id;
     switchScreen('screenGame');
-    document.getElementById('playerTag').textContent = "СУБЪЕКТ 02 (ГОСТЬ)";
-    setupConn();
+    document.getElementById('playerTag').innerText = "ПАЦИЕНТ 02 (ГОСТЬ)";
+    handleConn();
   });
 }
 
-function setupConn() {
-  conn.on('data', (data) => {
-    if (data.type === 'sync') {
-      gameState = data.state;
-      checkTurn();
-      render();
-    }
-    if (data.type === 'win') showDeath(data.winner);
-  });
+function handleConn() {
   conn.on('open', () => {
-    updateStatus("СВЯЗЬ УСТАНОВЛЕНА. СИНХРОНИЗАЦИЯ...");
-    if (myRole === 'guest') sync(); 
+    document.getElementById('statusMsg').innerText = "СВЯЗЬ УСТАНОВЛЕНА";
+    // Если гость подключился, он сообщает хосту, что готов
+    if(role === 'guest') {
+      conn.send({ type: 'READY' });
+    }
+  });
+
+  conn.on('data', data => {
+    // ХОСТ получает сигнал готовности и бросает жребий
+    if(data.type === 'READY' && role === 'host') {
+      state.activeP = Math.random() > 0.5 ? 1 : 2;
+      sync();
+    }
+    // Синхронизация состояния
+    if(data.type === 'SYNC') {
+      state = data.state;
+      update();
+    }
+    // Победа
+    if(data.type === 'WIN') showEnd(data.winner);
   });
 }
 
 function sync() {
-  if (conn && conn.open) conn.send({ type: 'sync', state: gameState });
+  if(conn && conn.open) conn.send({ type: 'SYNC', state: state });
+  update();
 }
 
-function checkTurn() {
-  const myNum = (myRole === 'host' ? 1 : 2);
-  isMyTurn = (gameState.curP === myNum);
+function update() {
+  const myP = (role === 'host' ? 1 : 2);
+  turn = (state.activeP === myP);
   
-  document.getElementById('triggerBtn').disabled = !isMyTurn || gameState.lastRoll !== null;
-  const indicator = document.getElementById('turnIndicator');
+  document.getElementById('rollBtn').disabled = !turn || state.roll !== null;
+  document.getElementById('rollRes').innerText = state.roll || "—";
+  document.getElementById('turnDot').style.color = turn ? "#f00" : "#222";
   
-  if (isMyTurn) {
-    indicator.textContent = "ВАШ ХОД";
-    indicator.style.color = "#f00";
-    updateStatus(gameState.lastRoll ? "ВЫБЕРИТЕ КЛЕТКУ В СТОЛБЦЕ " + (gameState.lastRoll === 6 ? "ПАЛАЧА" : gameState.lastRoll) : "ВАША ОЧЕРЕДЬ ЖАТЬ НА КУРОК.");
-  } else {
-    indicator.textContent = "ХОД ВРАГА";
-    indicator.style.color = "#333";
-    updateStatus("ДРУГОЙ ОБЪЕКТ ПРИНИМАЕТ РЕШЕНИЕ...");
-  }
-  document.getElementById('dieDisplay').textContent = gameState.lastRoll || "—";
+  const msg = turn ? (state.roll ? "ВЫБЕРИ СУДЬБУ (КОЛОНКА " + (state.roll==6?"ЛЮБАЯ":state.roll) + ")" : "ВАША ОЧЕРЕДЬ КРУТИТЬ БАРАБАН") : "ОЖИДАЙТЕ ДЕЙСТВИЙ ПРОТИВНИКА...";
+  document.getElementById('statusMsg').innerText = msg;
+  render();
 }
 
-function sendAction(act, r, c) {
-  if (!isMyTurn) return;
+function gameAction(type, r, c) {
+  if(!turn) return;
 
-  if (act === 'roll') {
-    gameState.lastRoll = Math.floor(Math.random() * 6) + 1;
-  } else if (act === 'mark') {
-    if (!gameState.lastRoll || gameState.marked[r][c] || (r===2 && c===2)) return;
-    if (gameState.lastRoll !== 6 && c !== (gameState.lastRoll - 1)) return;
-    
-    gameState.marked[r][c] = gameState.curP;
-    
-    if (checkWin()) {
-      conn.send({ type: 'win', winner: gameState.curP });
-      showDeath(gameState.curP);
+  if(type === 'roll') {
+    state.roll = Math.floor(Math.random() * 6) + 1;
+  } else if(type === 'mark') {
+    if(!state.roll || state.board[r][c] !== 0 || (r===2 && c===2)) return;
+    if(state.roll !== 6 && c !== (state.roll-1)) return;
+
+    state.board[r][c] = (role === 'host' ? 1 : 2);
+    if(checkWin()) {
+      conn.send({ type: 'WIN', winner: state.activeP });
+      showEnd(state.activeP);
       return;
     }
-    gameState.curP = (gameState.curP === 1 ? 2 : 1);
-    gameState.lastRoll = null;
+    state.activeP = (state.activeP === 1 ? 2 : 1);
+    state.roll = null;
   }
-  checkTurn(); render(); sync();
+  sync();
 }
 
 function render() {
-  const g = document.getElementById('bingoGrid'); g.innerHTML = '';
+  const g = document.getElementById('grid'); g.innerHTML = '';
   for(let r=0; r<5; r++) {
     for(let c=0; c<5; c++) {
-      const div = document.createElement('div');
-      div.className = 'br-cell' + (gameState.marked[r][c] === 1 ? ' p1-mark' : gameState.marked[r][c] === 2 ? ' p2-mark' : '') + (r===2 && c===2 ? ' free' : '');
-      div.textContent = CELLS[r][c];
-      div.onclick = () => sendAction('mark', r, c);
-      g.appendChild(div);
+      const d = document.createElement('div');
+      const val = state.board[r][c];
+      d.className = 'cell' + (val===1?' p1':val===2?' p2':val===3?' free':'');
+      d.innerText = WORDS[r][c];
+      d.onclick = () => gameAction('mark', r, c);
+      g.appendChild(d);
     }
   }
 }
 
-function updateStatus(msg) { document.getElementById('statusText').textContent = msg; }
-
 function checkWin() {
-  const m = gameState.marked;
-  const lines = [];
-  for(let i=0;i<5;i++) {
-    lines.push([[i,0],[i,1],[i,2],[i,3],[i,4]], [[0,i],[1,i],[2,i],[3,i],[4,i]]);
+  const b = state.board;
+  const winLines = [];
+  for(let i=0; i<5; i++) {
+    winLines.push([[i,0],[i,1],[i,2],[i,3],[i,4]], [[0,i],[1,i],[2,i],[3,i],[4,i]]);
   }
-  lines.push([[0,0],[1,1],[2,2],[3,3],[4,4]], [[0,4],[1,3],[2,2],[3,1],[4,0]]);
-  return lines.some(line => line.every(([r,c]) => m[r][c] !== 0));
+  winLines.push([[0,0],[1,1],[2,2],[3,3],[4,4]], [[0,4],[1,3],[2,2],[3,1],[4,0]]);
+  return winLines.some(l => l.every(([y,x]) => b[y][x] !== 0));
 }
 
-function showDeath(winnerNum) {
-  const myNum = (myRole === 'host' ? 1 : 2);
-  document.getElementById('deathTitle').textContent = (winnerNum === myNum) ? "ВЫ СТЕРТЫ" : "ВЫ ВЫЖИЛИ";
+function showEnd(w) {
+  const myP = (role === 'host' ? 1 : 2);
+  document.getElementById('deathTitle').innerText = (w === myP) ? "ВЫ СВОБОДНЫ" : "ВЫ СТЕРТЫ";
+  document.getElementById('deathSub').innerText = (w === myP) ? "ОБЪЕКТ УНИЧТОЖЕН. ВЫ ПОКИДАЕТЕ ТЕРМИНАЛ." : "ЛИНИЯ ЖИЗНИ ОБОРВАНА СИСТЕМОЙ.";
   document.getElementById('deathOverlay').style.display = 'flex';
 }
 </script>
