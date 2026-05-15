@@ -1,305 +1,299 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>DEAD MAN BINGO | MOBILE ADAPTIVE</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Special+Elite&family=Bebas+Neue&family=Share+Tech+Mono&display=swap');
+
+    /* Блокировка выделения и базовая настройка */
+    * { 
+      box-sizing: border-box; 
+      cursor: crosshair; 
+      user-select: none; 
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
 
     html, body {
       margin: 0;
       padding: 0;
       width: 100%;
       height: 100%;
-      overflow: hidden;
       background: #000;
       color: #b0a090;
       font-family: 'Share Tech Mono', monospace;
+      /* Разрешаем прокрутку на уровне body для мобильных */
+      overflow-x: hidden;
+      overflow-y: auto;
     }
 
-    * { box-sizing: border-box; cursor: crosshair; }
-
     .tv-shell {
+      min-height: 100vh;
       width: 100vw;
-      height: 100vh;
       background: #050505;
       display: flex;
-      align-items: center;
-      justify-content: center;
+      flex-direction: column;
       position: relative;
     }
 
     .screen {
+      flex: 1;
       width: 100%;
-      height: 100%;
+      min-height: 100vh;
       background: radial-gradient(circle, #2a0505 0%, #050000 100%);
       position: relative;
-      overflow: hidden;
       display: flex;
       flex-direction: column;
-      border: 15px solid #1a1a1a;
-      box-shadow: inset 0 0 150px rgba(0,0,0,1), 0 0 80px rgba(139,0,0,0.3);
+      border: 10px solid #1a1a1a;
+      box-shadow: inset 0 0 100px rgba(0,0,0,1);
     }
 
-    /* Эффект ЭЛТ-монитора */
+    /* Эффект ЭЛТ и помехи */
     .screen::before {
       content: " ";
       display: block;
       position: absolute;
       top: 0; left: 0; bottom: 0; right: 0;
-      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.3) 50%), 
-                  linear-gradient(90deg, rgba(255, 0, 0, 0.05), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.05));
+      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.2) 50%);
       z-index: 10;
-      background-size: 100% 3px, 3px 100%;
+      background-size: 100% 4px;
       pointer-events: none;
     }
 
-    /* Кровавые потеки */
     .blood-stain {
       position: absolute;
-      background: rgba(139, 0, 0, 0.4);
-      filter: blur(10px);
+      background: rgba(139, 0, 0, 0.3);
+      filter: blur(20px);
       border-radius: 50%;
       pointer-events: none;
       z-index: 1;
     }
 
-    .whisper {
-      position: absolute;
-      font-family: 'Special Elite', cursive;
-      font-size: 12px;
-      color: rgba(100, 0, 0, 0.5);
-      text-transform: uppercase;
-      pointer-events: none;
-      animation: breathe 4s infinite alternate;
-      z-index: 3;
-    }
-
-    @keyframes breathe {
-      from { opacity: 0.1; transform: scale(0.9); }
-      to { opacity: 0.6; transform: scale(1.1); filter: blur(1px); }
-    }
-
     .content-wrap {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      padding: 2vh 3vw;
       position: relative;
       z-index: 5;
-    }
-
-    /* Панель смены языка */
-    .lang-panel {
-      background: #111;
-      border: 2px solid #333;
-      padding: 5px 15px;
+      padding: 15px;
       display: flex;
-      align-items: center;
-      gap: 15px;
-      box-shadow: 0 0 15px rgba(0,0,0,0.8);
+      flex-direction: column;
+      width: 100%;
+      max-width: 800px;
+      margin: 0 auto;
     }
 
-    .lang-label { font-size: 10px; color: #555; letter-spacing: 2px; }
+    /* Адаптивная шапка */
+    .header-row {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .lang-panel {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      background: rgba(0,0,0,0.5);
+      padding: 5px;
+      border: 1px solid #333;
+    }
 
     .lang-btn {
       font-family: 'Bebas Neue', sans-serif;
-      font-size: 18px;
-      background: #000;
+      font-size: 16px;
+      background: #111;
       border: 1px solid #444;
-      color: #444;
-      padding: 2px 12px;
+      color: #555;
+      padding: 4px 12px;
       cursor: pointer;
-      transition: 0.3s;
     }
 
-    .lang-btn.active-ru { color: #ff0000; border-color: #800; box-shadow: 0 0 10px #f00; }
-    .lang-btn.active-en { color: #00aaff; border-color: #005; box-shadow: 0 0 10px #0af; }
+    .lang-btn.active-ru { color: #f00; border-color: #800; box-shadow: 0 0 5px #f00; }
+    .lang-btn.active-en { color: #0af; border-color: #005; box-shadow: 0 0 5px #0af; }
 
     .player-indicator {
       font-family: 'Bebas Neue', sans-serif;
-      font-size: clamp(20px, 4vh, 32px);
-      letter-spacing: 4px;
-      padding: 5px 20px;
-      background: rgba(0,0,0,0.8);
-      border-right: 4px solid #f00;
+      font-size: 24px;
+      text-align: center;
+      letter-spacing: 2px;
+      padding: 5px;
+      background: rgba(20,0,0,0.8);
+      border-bottom: 2px solid #500;
     }
-    .p1-active { color: #ff0000; text-shadow: 0 0 20px #f00; }
-    .p2-active { color: #0099ff; border-color: #0099ff; text-shadow: 0 0 20px #0099ff; }
+    .p1-active { color: #f00; text-shadow: 0 0 10px #f00; }
+    .p2-active { color: #0af; border-color: #0af; text-shadow: 0 0 10px #0af; }
 
     .br-title {
       font-family: 'Bebas Neue', sans-serif;
-      font-size: clamp(45px, 12vh, 120px);
+      font-size: clamp(30px, 8vw, 70px);
       text-align: center;
-      margin: 0;
+      margin: 10px 0;
       color: #600;
-      text-shadow: 0 0 30px rgba(255,0,0,0.2);
     }
-    .br-title span { color: #ff0000; }
+    .br-title span { color: #f00; }
 
-    .br-roll-area {
+    /* Панель управления */
+    .controls {
       display: flex;
-      align-items: center;
+      flex-wrap: wrap;
       justify-content: center;
-      gap: 40px;
-      margin: 2vh 0;
+      align-items: center;
+      gap: 15px;
+      margin-bottom: 15px;
     }
 
     .br-shotgun-btn {
       font-family: 'Bebas Neue', sans-serif;
-      font-size: clamp(18px, 3.5vh, 34px);
+      font-size: 24px;
       background: #400;
-      border: 4px solid #800;
+      border: 3px solid #800;
       color: #f00;
-      padding: 1vh 6vw;
-      box-shadow: 0 0 30px rgba(139,0,0,0.5);
+      padding: 10px 30px;
+      flex-grow: 1;
+      max-width: 300px;
     }
-
-    .br-shotgun-btn:active { transform: scale(0.95); filter: brightness(1.5); }
 
     .br-die-display {
       font-family: 'Bebas Neue', sans-serif;
-      font-size: 60px;
+      font-size: 40px;
       background: #000;
       border: 2px solid #500;
-      width: 12vh; height: 12vh;
+      width: 70px; height: 70px;
       display: flex; align-items: center; justify-content: center;
-      color: #ff0000;
-      box-shadow: inset 0 0 30px #f00;
+      color: #f00;
     }
 
     .br-status {
       text-align: center;
       font-family: 'Special Elite', cursive;
-      font-size: clamp(14px, 2.5vh, 24px);
+      font-size: 16px;
       color: #844;
-      padding: 1.5vh;
-      background: rgba(10,0,0,0.8);
-      border-bottom: 1px solid #500;
-      margin-bottom: 2vh;
+      padding: 10px;
+      background: rgba(0,0,0,0.7);
+      margin-bottom: 15px;
+      min-height: 50px;
+      border: 1px solid #311;
     }
 
+    /* Сетка Бинго - фиксированная высота для предотвращения "прыжков" */
     .br-grid {
-      flex: 1;
       display: grid;
       grid-template-columns: repeat(5, 1fr);
       grid-template-rows: repeat(5, 1fr);
-      gap: 10px;
+      gap: 5px;
+      width: 100%;
+      aspect-ratio: 1 / 1; /* Квадратная сетка */
+      margin-bottom: 20px;
     }
 
     .br-cell {
-      background: rgba(15, 5, 5, 0.9);
-      border: 1px solid #422;
-      font-size: clamp(10px, 1.8vh, 15px);
+      background: rgba(15, 5, 5, 0.95);
+      border: 1px solid #322;
+      font-size: clamp(7px, 2vw, 12px);
       color: #554;
       display: flex; align-items: center; justify-content: center;
       text-align: center;
-      padding: 5px;
-      transition: 0.2s;
+      padding: 2px;
+      overflow: hidden;
+      word-break: break-word;
     }
 
-    .br-cell.p1-mark { background: #300; border-color: #f00; color: #fff; box-shadow: inset 0 0 15px #f00; text-decoration: line-through; }
-    .br-cell.p2-mark { background: #003; border-color: #09f; color: #fff; box-shadow: inset 0 0 15px #09f; text-decoration: line-through; }
-    .br-cell.free { background: #000; color: #f00; border: 2px dashed #f00; font-weight: bold; }
+    .br-cell.p1-mark { background: #400; border-color: #f00; color: #fff; text-decoration: line-through; }
+    .br-cell.p2-mark { background: #004; border-color: #0af; color: #fff; text-decoration: line-through; }
+    .br-cell.free { color: #f00; border: 1px dashed #f00; font-weight: bold; }
 
-    .br-info { display: flex; gap: 30px; margin-top: 2vh; }
-    .br-info-block { flex: 1; border-left: 5px solid #800; padding-left: 15px; background: rgba(20,0,0,0.5); }
+    /* Инфо-блоки */
+    .br-info {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      padding-bottom: 40px;
+    }
+    .br-info-block { border-left: 4px solid #600; padding: 5px 15px; background: rgba(20,0,0,0.5); }
     .br-info-title { font-family: 'Bebas Neue'; color: #f00; font-size: 18px; }
-    .br-info-text { font-size: 13px; color: #666; line-height: 1.4; }
+    .br-info-text { font-size: 12px; color: #666; }
 
+    /* Оверлей смерти */
     .br-death-overlay {
       display: none; position: fixed; inset: 0;
       background: #000; z-index: 100;
       flex-direction: column; align-items: center; justify-content: center;
-      animation: glitch-bg 0.2s infinite;
+      padding: 20px; text-align: center;
     }
     .br-death-overlay.show { display: flex; }
-    @keyframes glitch-bg { 0% { background: #000; } 50% { background: #1a0000; } 100% { background: #000; } }
-
-    .br-death-title { font-family: 'Bebas Neue'; font-size: 15vh; color: #f00; text-shadow: 0 0 50px #f00; }
+    .br-death-title { font-family: 'Bebas Neue'; font-size: 15vw; color: #f00; text-shadow: 0 0 30px #f00; }
   </style>
 </head>
 <body>
 
 <div class="tv-shell">
   <div class="screen">
-    <div class="blood-stain" style="width: 300px; height: 300px; top: -50px; left: -50px;"></div>
-    <div class="blood-stain" style="width: 200px; height: 200px; bottom: 20px; right: -30px;"></div>
+    <div class="blood-stain" style="width: 200px; height: 200px; top: -50px; left: -50px;"></div>
     
-    <div class="whisper" style="top: 10%; left: 5%;">Every mark is a scar</div>
-    <div class="whisper" style="bottom: 15%; right: 8%;">Silence is coming</div>
-    <div class="whisper" style="top: 40%; right: 2%;">Don't look back</div>
-
     <div class="content-wrap">
-      <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-        <div id="pIndicator" class="player-indicator p1-active">PLAYER 1 TURN</div>
-        
+      <div class="header-row">
         <div class="lang-panel">
-          <span class="lang-label">LOCALE:</span>
           <button class="lang-btn" id="btnEn" onclick="setLang('en')">EN</button>
           <button class="lang-btn" id="btnRu" onclick="setLang('ru')">RU</button>
         </div>
+        <div id="pIndicator" class="player-indicator p1-active">ОБЪЕКТ_01: АКТИВЕН</div>
       </div>
 
       <h1 class="br-title">DEAD MAN <span>BINGO</span></h1>
 
-      <div class="br-roll-area">
-        <button class="br-shotgun-btn" onclick="rollShell()" id="triggerBtn">PULL TRIGGER</button>
+      <div class="controls">
+        <button class="br-shotgun-btn" onclick="rollShell()" id="triggerBtn">СПУСТИТЬ КУРОК</button>
         <div class="br-die-display" id="dieDisplay">—</div>
-        <button class="lang-btn" style="border-color: #222; font-size: 12px;" onclick="resetGame()">REBOOT SYSTEM</button>
       </div>
 
-      <div class="br-status" id="statusText"></div>
+      <div class="br-status" id="statusText">ЗАГРУЗКА СИСТЕМЫ...</div>
 
       <div class="br-grid" id="bingoGrid"></div>
 
       <div class="br-info">
         <div class="br-info-block">
-          <span class="br-info-title" id="modeTitle">THE SWITCHMAN</span>
-          <div class="br-info-text" id="modeText">You are the executor. If 6 falls, you decide who bleeds today.</div>
+          <span class="br-info-title" id="modeTitle">ПАЛАЧ</span>
+          <div class="br-info-text" id="modeText">Если выпало 6, ты сам выбираешь цель.</div>
         </div>
-        <div class="br-info-block">
-          <span class="br-info-title" id="goalTitle">TERMINATION</span>
-          <div class="br-info-text" id="goalText">Complete the line to end your cycle. The machine is always hungry.</div>
+        <div class="br-info-block" style="border-color: #222;">
+          <span class="br-info-title" style="color: #444;">REBOOT</span>
+          <div class="br-info-text" onclick="resetGame()" style="cursor:pointer; text-decoration: underline;">Сбросить прогресс системы</div>
         </div>
       </div>
     </div>
   </div>
 
   <div class="br-death-overlay" id="deathOverlay" onclick="resetGame()">
-    <div class="br-death-title" id="deathTitle">NULLIFIED</div>
-    <div style="font-family: 'Special Elite'; color: #600; margin-top: 30px; letter-spacing: 5px;">THE CYCLE STARTS AGAIN</div>
+    <div class="br-death-title" id="deathTitle">ERASED</div>
+    <div style="font-family: 'Special Elite'; color: #600; margin-top: 20px;">НАЖМИ ДЛЯ ПОВТОРА</div>
   </div>
 </div>
 
 <script>
 const LANGS = {
   en: {
-    p1: 'SUBJECT 1 ACTIVE', p2: 'SUBJECT 2 ACTIVE', d1: 'SUBJECT 1 NULLIFIED', d2: 'SUBJECT 2 NULLIFIED',
-    roll: (n, c) => 'VOID ROLLED ' + n + '. INJECT IN ' + c, any: '☠ SWITCHMAN! INFECT ANY TARGET.',
-    init: 'FEED THE MACHINE. PULL THE TRIGGER.', trigger: 'SPARE NO ONE',
-    modeT: 'THE SWITCHMAN', modeX: 'At 6, you become the Hand of Fate. Choose the victim.',
-    goalT: 'THE VOID', goalX: 'The line is a grave. Do not be the one to dig it.',
+    p1: 'SUBJECT_01: ACTIVE', p2: 'SUBJECT_02: ACTIVE', d1: 'SUBJECT_01: ERASED', d2: 'SUBJECT_02: ERASED',
+    roll: (n, c) => 'ROLLED: ' + n + '. TARGET COL: ' + c, any: '☠ OVERRIDE! CHOOSE ANY TARGET.',
+    init: 'FEED THE VOID. PULL THE TRIGGER.', trigger: 'PULL TRIGGER',
     cells: [
-      ['SADISM','IRRITABILITY','SELF-HARM','DIABETES','HEART DISEASE'],
-      ['TOXIC RELATIONS','AGGRESSION','BURNOUT','IGNORED PAIN','CHRONIC ILLNESS'],
-      ['VIOLENCE','LEGAL CHAOS','★ DOOMED ★','INSOMNIA','DEPENDENCE'],
+      ['SADISM','ANXIETY','SELF-HARM','DIABETES','HEART FAILURE'],
+      ['TOXICITY','AGRESSION','BURNOUT','IGNORED PAIN','CHRONIC PAIN'],
+      ['VIOLENCE','CRIME','★ DOOMED ★','INSOMNIA','DEPENDENCE'],
       ['ISOLATION','ALCOHOLISM','BINGE EATING','PANIC','PARANOIA'],
-      ['ADDICTION','HEAVY SMOKING','DELUSIONS','ANXIETY','DEPRESSION']
+      ['NARCOTICS','SMOKING','DELUSIONS','DEBT','DEPRESSION']
     ]
   },
   ru: {
-    p1: 'ОБЪЕКТ 1 АКТИВЕН', p2: 'ОБЪЕКТ 2 АКТИВЕН', d1: 'ОБЪЕКТ 1 СТЕРТ', d2: 'ОБЪЕКТ 2 СТЕРТ',
-    roll: (n, c) => 'БЕЗДНА ВЫДАЛА ' + n + '. МЕТКА В ' + c, any: '☠ СТРЕЛОЧНИК! ВЫБЕРИ СЛЕДУЮЩУЮ ЖЕРТВУ.',
-    init: 'МАШИНА ЖАЖДЕТ КРОВИ. ЖМИ.', trigger: 'СПУСТИТЬ КУРОК',
-    modeT: 'СТРЕЛОЧНИК', modeX: 'На 6 ты становишься судьей. Выбери, кому нанести удар.',
-    goalT: 'ФИНАЛ', goalX: 'Линия — это тупик. Кто завершит её, тот станет частью машины.',
+    p1: 'ОБЪЕКТ_01: АКТИВЕН', p2: 'ОБЪЕКТ_02: АКТИВЕН', d1: 'ОБЪЕКТ_01: СТЕРТ', d2: 'ОБЪЕКТ_02: СТЕРТ',
+    roll: (n, c) => 'ВЫПАЛО: ' + n + '. СТОЛБЕЦ: ' + c, any: '☠ ПЕРЕХВАТ! ВЫБЕРИ ЛЮБУЮ ЦЕЛЬ.',
+    init: 'МАШИНА ЖДЕТ. ЖМИ НА КУРОК.', trigger: 'СПУСТИТЬ КУРОК',
     cells: [
-      ['САДИЗМ','ЯРОСТЬ','SELF-HARM','ДИАБЕТ','БОЛЕЗНЬ СЕРДЦА'],
-      ['ТОКСИЧНОСТЬ','АГРЕССИЯ','ВЫГОРАНИЕ','ИГНОР БОЛИ','ХРОНИКА'],
+      ['САДИЗМ','ТРЕВОГА','SELF-HARM','ДИАБЕТ','ОТКАЗ СЕРДЦА'],
+      ['ТОКСИЧНОСТЬ','АГРЕССИЯ','ВЫГОРАНИЕ','ИГНОР БОЛИ','ХРОНИЧЕСКАЯ БОЛЬ'],
       ['НАСИЛИЕ','ЗАКОН','★ ОБРЕЧЕН ★','БЕССОНИЦА','ЗАВИСИМОСТЬ'],
       ['ИЗОЛЯЦИЯ','ПЬЯНСТВО','ЖОР','ПАНИКА','ПАРАНОЙЯ'],
-      ['НАРКОТИКИ','КУРЕНИЕ','БРЕД','ТРЕВОГА','ДЕПРЕССИЯ']
+      ['НАРКОТИКИ','КУРЕНИЕ','БРЕД','ДОЛГИ','ДЕПРЕССИЯ']
     ]
   }
 };
@@ -319,10 +313,6 @@ function updateUI() {
   document.getElementById('pIndicator').textContent = curP === 1 ? L.p1 : L.p2;
   document.getElementById('pIndicator').className = 'player-indicator ' + (curP === 1 ? 'p1-active' : 'p2-active');
   document.getElementById('triggerBtn').textContent = L.trigger;
-  document.getElementById('modeTitle').textContent = L.modeT;
-  document.getElementById('modeText').textContent = L.modeX;
-  document.getElementById('goalTitle').textContent = L.goalT;
-  document.getElementById('goalText').textContent = L.goalX;
   if(!lastRoll) document.getElementById('statusText').textContent = L.init;
   render();
 }
@@ -345,15 +335,15 @@ function rollShell() {
   let count = 0;
   const inv = setInterval(() => {
     document.getElementById('dieDisplay').textContent = Math.floor(Math.random()*6)+1;
-    if(++count > 20) {
+    if(++count > 15) {
       clearInterval(inv);
       lastRoll = Math.floor(Math.random()*6)+1;
       document.getElementById('dieDisplay').textContent = lastRoll;
       activeCol = lastRoll === 6 ? -1 : lastRoll - 1;
-      document.getElementById('statusText').textContent = lastRoll === 6 ? LANGS[lang].any : LANGS[lang].roll(lastRoll, 'COL ' + lastRoll);
+      document.getElementById('statusText').textContent = lastRoll === 6 ? LANGS[lang].any : LANGS[lang].roll(lastRoll, (lastRoll));
       render();
     }
-  }, 40);
+  }, 50);
 }
 
 function handleCell(r, c) {
@@ -374,7 +364,10 @@ function handleCell(r, c) {
 
 function checkWin() {
   const lines = [];
-  for(let i=0; i<5; i++) { lines.push([[i,0],[i,1],[i,2],[i,3],[i,4]]); lines.push([[0,i],[1,i],[2,i],[3,i],[4,i]]); }
+  for(let i=0; i<5; i++) {
+    lines.push([[i,0],[i,1],[i,2],[i,3],[i,4]]);
+    lines.push([[0,i],[1,i],[2,i],[3,i],[4,i]]);
+  }
   lines.push([[0,0],[1,1],[2,2],[3,3],[4,4]], [[0,4],[1,3],[2,2],[3,1],[4,0]]);
   return lines.some(line => line.every(([r,c]) => marked[r][c] !== 0));
 }
