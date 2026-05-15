@@ -3,125 +3,104 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TERMINAL 666 | STABLE</title>
+    <title>TERMINAL 666 | ONLINE</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Special+Elite&family=Bebas+Neue&family=Share+Tech+Mono&display=swap');
 
-        :root { --blood: #8a0303; --neon: #0af; --glow: #f00; }
+        :root { --blood: #8a0303; --neon: #0af; --dark: #050000; }
 
         * { box-sizing: border-box; cursor: crosshair; user-select: none; }
-        body, html { margin: 0; padding: 0; background: #050000; color: #b0a090; font-family: 'Share Tech Mono', monospace; overflow: hidden; height: 100%; }
+        body, html { margin: 0; padding: 0; background: var(--dark); color: #b0a090; font-family: 'Share Tech Mono', monospace; height: 100%; overflow: hidden; }
 
-        /* ЭФФЕКТ ТЕЛЕВИЗОРА (CRT) */
-        .crt-monitor {
-            position: fixed; inset: 0; pointer-events: none;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.2) 50%),
-                        linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
-            z-index: 1000; background-size: 100% 3px, 3px 100%;
-        }
-        .scanlines {
-            position: fixed; inset: 0; pointer-events: none;
-            background: linear-gradient(to bottom, transparent, rgba(0,0,0,0.5) 50%, transparent);
-            background-size: 100% 8px; animation: scan 10s linear infinite; z-index: 1001; opacity: 0.3;
-        }
-        @keyframes scan { from { transform: translateY(-100%); } to { transform: translateY(100%); } }
+        /* CRT EFFECTS */
+        .crt-overlay { position: fixed; inset: 0; pointer-events: none; z-index: 1000;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), radial-gradient(circle, transparent 40%, black 150%);
+            background-size: 100% 4px, 100% 100%; }
+        
+        .scanline { position: fixed; top: 0; width: 100%; height: 100px; background: linear-gradient(0deg, transparent, rgba(138, 3, 3, 0.1), transparent);
+            animation: moveScan 8s linear infinite; pointer-events: none; z-index: 1001; }
+        @keyframes moveScan { from { top: -100px; } to { top: 100%; } }
 
-        .vignette { position: fixed; inset: 0; background: radial-gradient(circle, transparent 40%, black 150%); z-index: 1002; pointer-events: none; }
+        .glitch-noise { position: fixed; inset: 0; opacity: 0.03; pointer-events: none; z-index: 999;
+            background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyBAMAAADsEZWCAAAAGFBMVEUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAt6pY6AAAAB3RSTlMAAAAAAAAAb6IsjAAAAAlwSFlzAAALEwAACxMBAJqcGAAAAClJREFUeF7twQENAAAAwqD3T20PBxQAAAAAAAAAAAAAAAAAAAAAAADuBh8AAfS8868AAAAASUVORK5CYII='); }
 
-        /* КРОВЬ */
-        .blood-drip {
-            position: fixed; top: 0; left: 10%; width: 20px; height: 150px;
-            background: var(--blood); border-radius: 0 0 10px 10px;
-            filter: blur(2px); opacity: 0.6; box-shadow: 0 0 20px var(--blood); z-index: 5;
-        }
-
-        /* ЭКРАНЫ */
-        .screen { display: none; width: 100vw; height: 100vh; position: absolute; inset: 0; padding: 20px; flex-direction: column; align-items: center; justify-content: center; z-index: 10; }
+        /* SCREENS */
+        .screen { display: none; width: 100vw; height: 100vh; flex-direction: column; align-items: center; justify-content: center; padding: 20px; z-index: 10; position: relative; }
         .screen.active { display: flex; }
 
-        .logo { font-family: 'Bebas Neue'; font-size: clamp(60px, 15vw, 100px); color: var(--blood); text-shadow: 0 0 15px var(--blood); text-align: center; line-height: 0.8; margin-bottom: 20px; animation: flicker 0.2s infinite alternate; }
-        @keyframes flicker { 0% { opacity: 0.8; } 100% { opacity: 1; text-shadow: 0 0 30px var(--blood); } }
+        .logo { font-family: 'Bebas Neue'; font-size: clamp(70px, 18vw, 120px); color: var(--blood); text-shadow: 0 0 20px var(--blood); line-height: 0.8; text-align: center; margin-bottom: 40px; animation: glitchText 3s infinite; }
+        @keyframes glitchText { 0% { transform: skew(0deg); } 2% { transform: skew(10deg); color: var(--neon); } 4% { transform: skew(-10deg); } 5% { transform: skew(0deg); color: var(--blood); } }
 
-        .btn {
-            font-family: 'Bebas Neue'; font-size: 24px; background: #1a0000; border: 2px solid var(--blood); color: var(--blood);
-            padding: 12px; width: 100%; max-width: 300px; margin: 8px; transition: 0.2s; letter-spacing: 2px; position: relative; overflow: hidden;
-        }
-        .btn:hover:not(:disabled) { background: var(--blood); color: #fff; box-shadow: 0 0 20px var(--blood); }
-        .btn:disabled { opacity: 0.2; cursor: not-allowed; }
+        .btn { font-family: 'Bebas Neue'; font-size: 26px; background: #1a0000; border: 2px solid var(--blood); color: var(--blood); padding: 15px; width: 100%; max-width: 320px; margin: 10px; transition: 0.2s; letter-spacing: 3px; position: relative; }
+        .btn:hover:not(:disabled) { background: var(--blood); color: #fff; box-shadow: 0 0 30px var(--blood); transform: scale(1.02); }
+        .btn:disabled { opacity: 0.1; filter: grayscale(1); }
 
-        .lang-toggle { position: fixed; top: 20px; right: 20px; z-index: 2000; background: #000; border: 1px solid #444; color: var(--neon); padding: 5px 10px; font-size: 12px; }
+        .lang-switch { position: fixed; top: 20px; right: 20px; z-index: 2000; border: 1px solid #444; background: #000; color: var(--neon); padding: 5px 12px; font-size: 14px; }
 
-        /* ИГРОВОЕ ПОЛЕ */
-        .game-layout { display: flex; flex-direction: row; gap: 20px; width: 100%; max-width: 900px; align-items: flex-start; }
-        .side-panel { flex: 1; background: rgba(15,0,0,0.8); border: 1px solid #400; padding: 15px; font-size: 13px; border-left: 5px solid var(--blood); }
-        
-        .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; width: 450px; aspect-ratio: 1/1; border: 2px solid #200; padding: 5px; background: #000; }
-        .cell { 
-            background: #0d0000; border: 1px solid #311; aspect-ratio: 1/1; 
-            display: flex; align-items: center; justify-content: center; font-size: clamp(8px, 2vw, 11px); text-align: center; padding: 2px; color: #644; transition: 0.1s;
-        }
-        .cell:hover:not(.p1):not(.p2) { background: #200; color: #fff; }
-        .cell.p1 { background: #800; color: #fff; text-decoration: line-through; box-shadow: inset 0 0 15px #000; border-color: #f00; }
-        .cell.p2 { background: #004; color: #fff; text-decoration: line-through; box-shadow: inset 0 0 15px #000; border-color: #0af; }
+        /* GAMEPLAY */
+        .game-grid-container { display: flex; gap: 30px; width: 100%; max-width: 1000px; justify-content: center; align-items: flex-start; }
+        .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; width: 100%; max-width: 480px; aspect-ratio: 1/1; background: #111; padding: 6px; border: 1px solid #300; }
+        .cell { background: #080000; border: 1px solid #222; display: flex; align-items: center; justify-content: center; text-align: center; font-size: clamp(9px, 2.5vw, 12px); color: #555; transition: 0.1s; padding: 4px; aspect-ratio: 1/1; }
+        .cell.p1 { background: var(--blood); color: #fff; box-shadow: inset 0 0 15px #000; border-color: #f00; }
+        .cell.p2 { background: #004; color: #fff; box-shadow: inset 0 0 15px #000; border-color: var(--neon); }
         .cell.free { color: var(--blood); border: 1px dashed var(--blood); font-weight: bold; }
 
-        #rollRes { width: 80px; height: 80px; border: 3px double var(--blood); display: flex; align-items: center; justify-content: center; font-size: 40px; font-family: 'Bebas Neue'; color: #f00; text-shadow: 0 0 10px #f00; background: #000; }
+        .panel { background: rgba(15, 0, 0, 0.9); border: 1px solid #400; padding: 20px; width: 300px; font-size: 14px; border-left: 4px solid var(--blood); }
+        #rollVal { width: 70px; height: 70px; border: 2px solid var(--blood); display: flex; align-items: center; justify-content: center; font-family: 'Bebas Neue'; font-size: 40px; color: #f00; background: #000; margin-left: 10px; }
 
-        input { background: #000; border: 1px solid #500; color: var(--neon); padding: 15px; width: 280px; text-align: center; font-family: inherit; font-size: 20px; outline: none; margin-bottom: 10px; }
+        input { background: #000; border: 1px solid #400; color: var(--neon); padding: 18px; width: 320px; text-align: center; font-size: 24px; font-family: inherit; outline: none; margin-bottom: 20px; }
 
-        @media (max-width: 800px) {
-            .game-layout { flex-direction: column; align-items: center; }
-            .grid { width: 100%; max-width: 350px; }
-            .side-panel { width: 100%; order: 2; }
+        @media (max-width: 850px) {
+            .game-grid-container { flex-direction: column; align-items: center; }
+            .panel { width: 100%; order: 2; }
+            .grid { max-width: 380px; }
         }
     </style>
 </head>
 <body>
 
-    <div class="crt-monitor"></div>
-    <div class="scanlines"></div>
-    <div class="vignette"></div>
-    <div class="blood-drip" style="left: 15%; height: 200px;"></div>
-    <div class="blood-drip" style="left: 80%; height: 100px;"></div>
+    <div class="crt-overlay"></div>
+    <div class="scanline"></div>
+    <div class="glitch-noise"></div>
 
-    <button class="lang-toggle" onclick="toggleLang()">RU / EN</button>
+    <button class="lang-switch" onclick="toggleLanguage()">RU / EN</button>
 
     <div id="scrMenu" class="screen active">
-        <div class="logo">TERMINAL<br>BINGO</div>
-        <button class="btn" onclick="hostGame()" data-t="create">СОЗДАТЬ ЛОББИ</button>
+        <div class="logo">VOID<br>TERMINAL</div>
+        <button class="btn" onclick="startHost()" data-t="create">СОЗДАТЬ ЛОББИ</button>
         <button class="btn" onclick="switchScreen('scrJoin')" data-t="join">ПОДКЛЮЧИТЬСЯ</button>
     </div>
 
     <div id="scrJoin" class="screen">
-        <input type="text" id="gameIdInput" placeholder="ID...">
-        <button class="btn" onclick="joinGame()" data-t="start">НАЧАТЬ СЕАНС</button>
-        <button class="btn" style="border:none; color:#444" onclick="switchScreen('scrMenu')" data-t="back">НАЗАД</button>
+        <input type="text" id="joinInput" placeholder="ID...">
+        <button class="btn" onclick="startJoin()" data-t="start">ВОЙТИ В ПОТОК</button>
+        <button class="btn" style="border:none; color:#444" onclick="switchScreen('scrMenu')" data-t="back">ОТМЕНА</button>
     </div>
 
     <div id="scrGame" class="screen">
-        <div class="game-layout">
-            <div class="side-panel">
-                <div id="gameIdLabel" style="color: var(--neon); font-size: 18px; margin-bottom: 10px;">ID: ...</div>
-                <hr style="border: 0; border-top: 1px solid #311;">
-                <p id="instrTitle" style="color: var(--blood); font-weight: bold;">ПРОТОКОЛ:</p>
-                <div id="instructions" style="line-height: 1.4; color: #866;">
-                    1. Брось кубик (КУРОК).<br>
-                    2. Выпавшее число — номер колонки.<br>
-                    3. Нажми на слово в этой колонке.<br>
-                    4. 6 — стреляй в любую клетку.<br>
-                    5. 5 в ряд — ты победил.
+        <div class="game-grid-container">
+            <div class="panel">
+                <div id="displayId" style="color: var(--neon); font-size: 18px; margin-bottom: 10px;">ID: ...</div>
+                <hr style="border:0; border-top:1px solid #311; margin: 15px 0;">
+                <b id="tProt" style="color:var(--blood)">ПРОТОКОЛ:</b>
+                <div id="tInstr" style="color:#777; margin-top:10px; line-height:1.5; font-size:13px;">
+                    1. Нажми КУРОК.<br>
+                    2. Выпавшая цифра - твоя колонка.<br>
+                    3. Займи клетку в этой колонке.<br>
+                    4. Цифра 6 - свободный выбор.<br>
+                    5. Собери 5 в ряд.
                 </div>
             </div>
 
-            <div style="display: flex; flex-direction: column; align-items: center;">
-                <div id="status" style="margin-bottom: 10px; font-family: 'Special Elite'; color: #f00;">СИНХРОНИЗАЦИЯ...</div>
-                <div style="display:flex; gap:10px; margin-bottom:10px; width: 100%;">
-                    <button class="btn" id="rollBtn" style="margin:0; flex:1;" onclick="rollDice()" data-t="trigger">КУРОК</button>
-                    <div id="rollRes">—</div>
+            <div style="display:flex; flex-direction:column; align-items:center;">
+                <div id="gameStatus" style="color: #f00; margin-bottom: 15px; font-family:'Special Elite'; height: 20px;"></div>
+                <div style="display:flex; margin-bottom:15px; width:100%;">
+                    <button class="btn" id="rollBtn" style="margin:0; flex:1;" onclick="triggerRoll()" data-t="roll">КУРОК</button>
+                    <div id="rollVal">—</div>
                 </div>
-                <div class="grid" id="grid"></div>
+                <div class="grid" id="mainGrid"></div>
             </div>
         </div>
     </div>
@@ -136,146 +115,123 @@
             messagingSenderId: "295762947740",
             appId: "1:295762947740:web:d059946a791238352ec759"
         };
-        
+
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        let gameId = "";
-        let playerNum = 0;
-        let gameState = null;
-        let currentLang = 'ru';
+        let gId = "";
+        let pNum = 0;
+        let gState = null;
+        let lang = 'ru';
 
-        const TRANSLATIONS = {
-            ru: {
-                create: "СОЗДАТЬ ЛОББИ", join: "ПОДКЛЮЧИТЬСЯ", start: "НАЧАТЬ СЕАНС", back: "НАЗАД",
-                trigger: "КУРОК", wait: "ОЖИДАНИЕ ЖЕРТВЫ...", yourTurn: "ТВОЙ ХОД", enemyTurn: "ВРАГ ГОТОВИТСЯ...",
-                instr: "1. Брось кубик (КУРОК).<br>2. Выпавшее число — номер колонки.<br>3. Нажми на слово в этой колонке.<br>4. 6 — стреляй в любую клетку.<br>5. 5 в ряд — ты победил.",
-                prot: "ПРОТОКОЛ:", win: "ВЫ ВЫЖИЛИ", lose: "ВЫ СТЕРТЫ"
-            },
-            en: {
-                create: "CREATE LOBBY", join: "CONNECT", start: "START SESSION", back: "BACK",
-                trigger: "TRIGGER", wait: "WAITING FOR VICTIM...", yourTurn: "YOUR TURN", enemyTurn: "ENEMY AIMING...",
-                instr: "1. Pull the TRIGGER (dice).<br>2. Number is the column index.<br>3. Click a word in that column.<br>4. 6 — free shot anywhere.<br>5. 5 in a row — you survive.",
-                prot: "PROTOCOL:", win: "YOU SURVIVED", lose: "YOU ARE ERASED"
-            }
+        const TEXTS = {
+            ru: { create:"СОЗДАТЬ ЛОББИ", join:"ПОДКЛЮЧИТЬСЯ", start:"ВОЙТИ В ПОТОК", back:"ОТМЕНА", roll:"КУРОК", wait:"ОЖИДАНИЕ СУБЪЕКТА...", your:"ТВОЙ ХОД", enemy:"ВРАГ ЦЕЛИТСЯ...", win:"ВЫ ВЫЖИЛИ", lose:"ВЫ СТЕРТЫ", prot:"ПРОТОКОЛ:", instr: "1. Нажми КУРОК (бросок).<br>2. Выпавшая цифра - твоя колонка.<br>3. Займи клетку в этой колонке.<br>4. Цифра 6 - свободный выбор.<br>5. Собери 5 в ряд." },
+            en: { create:"CREATE LOBBY", join:"CONNECT", start:"ENTER FLOW", back:"CANCEL", roll:"TRIGGER", wait:"AWAITING SUBJECT...", your:"YOUR TURN", enemy:"ENEMY AIMING...", win:"YOU SURVIVED", lose:"YOU ARE ERASED", prot:"PROTOCOL:", instr: "1. Press TRIGGER (roll).<br>2. The number is your column.<br>3. Occupy a cell in that column.<br>4. Number 6 is a free choice.<br>5. Get 5 in a row." }
         };
 
-        const WORDS = ["БОЛЬ", "УЖАС", "ТЛЕН", "МОРГ", "ЯД", "БРЕД", "АГОНИЯ", "МРАК", "СТРАХ", "ПЫТКИ", "КРОВЬ", "КРИК", "ТЬМА", "ХАОС", "ГНИЛЬ", "СМЕРТЬ", "ПУСТОТА", "БЕЗДНА", "ШРАМ", "ГРЕХ", "ПЕТЛЯ", "ЗЛО", "РОК", "ГРОБ", "ТЕНЬ"];
+        const DICTIONARY = ["БОЛЬ", "УЖАС", "ТЛЕН", "МОРГ", "ЯД", "БРЕД", "АГОНИЯ", "МРАК", "СТРАХ", "ПЫТКИ", "КРОВЬ", "КРИК", "ТЬМА", "ХАОС", "ГНИЛЬ", "СМЕРТЬ", "ПУСТОТА", "БЕЗДНА", "ШРАМ", "ГРЕХ", "ПЕТЛЯ", "ЗЛО", "РОК", "ГРОБ", "ТЕНЬ"];
 
-        function toggleLang() {
-            currentLang = currentLang === 'ru' ? 'en' : 'ru';
-            document.querySelectorAll('[data-t]').forEach(el => {
-                el.innerText = TRANSLATIONS[currentLang][el.getAttribute('data-t')];
-            });
-            document.getElementById('instrTitle').innerText = TRANSLATIONS[currentLang].prot;
-            document.getElementById('instructions').innerHTML = TRANSLATIONS[currentLang].instr;
-            if (gameState) updateUI();
+        function toggleLanguage() {
+            lang = lang === 'ru' ? 'en' : 'ru';
+            document.querySelectorAll('[data-t]').forEach(el => el.innerText = TEXTS[lang][el.getAttribute('data-t')]);
+            document.getElementById('tProt').innerText = TEXTS[lang].prot;
+            document.getElementById('tInstr').innerHTML = TEXTS[lang].instr;
+            if(gState) updateInterface();
         }
 
-        function switchScreen(id) {
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            document.getElementById(id).classList.add('active');
+        function switchScreen(s) {
+            document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+            document.getElementById(s).classList.add('active');
         }
 
-        function hostGame() {
-            gameId = Math.random().toString(36).substring(2, 6).toUpperCase();
-            playerNum = 1;
-            const initialData = {
-                board: Array(25).fill(0),
-                turn: 1,
-                roll: null,
-                players: 1,
-                winner: 0
-            };
-            initialData.board[12] = 3;
-            db.ref('games/' + gameId).set(initialData).then(startListening);
+        function startHost() {
+            gId = Math.random().toString(36).substring(2, 7).toUpperCase();
+            pNum = 1;
+            const data = { board: Array(25).fill(0), turn: 1, roll: 0, players: 1, winner: 0 };
+            data.board[12] = 3; // FREE
+            db.ref('games/' + gId).set(data).then(listen);
         }
 
-        function joinGame() {
-            gameId = document.getElementById('gameIdInput').value.trim().toUpperCase();
-            if(!gameId) return;
-            playerNum = 2;
-            db.ref('games/' + gameId).once('value', snapshot => {
-                if(snapshot.exists()) {
-                    db.ref('games/' + gameId).update({ players: 2 });
-                    startListening();
-                } else { alert("VOID ID"); }
+        function startJoin() {
+            gId = document.getElementById('joinInput').value.trim().toUpperCase();
+            if(!gId) return;
+            pNum = 2;
+            db.ref('games/' + gId).once('value', s => {
+                if(s.exists()){
+                    db.ref('games/' + gId).update({ players: 2 });
+                    listen();
+                } else { alert("TERMINAL NOT FOUND"); }
             });
         }
 
-        function startListening() {
+        function listen() {
             switchScreen('scrGame');
-            document.getElementById('gameIdLabel').innerText = "ID: " + gameId;
-            db.ref('games/' + gameId).on('value', snapshot => {
-                gameState = snapshot.val();
-                if (!gameState) return;
-                render();
-                updateUI();
-                if (gameState.winner !== 0) {
-                    alert(gameState.winner === playerNum ? TRANSLATIONS[currentLang].win : TRANSLATIONS[currentLang].lose);
-                    location.reload();
+            document.getElementById('displayId').innerText = "ID: " + gId;
+            db.ref('games/' + gId).on('value', s => {
+                gState = s.val();
+                if(!gState) return;
+                drawGrid();
+                updateInterface();
+                if(gState.winner && gState.winner !== 0) {
+                    setTimeout(() => {
+                        alert(gState.winner === pNum ? TEXTS[lang].win : TEXTS[lang].lose);
+                        location.reload();
+                    }, 400);
                 }
             });
         }
 
-        function updateUI() {
-            const isMyTurn = gameState.turn === playerNum;
-            const status = document.getElementById('status');
-            const rollBtn = document.getElementById('rollBtn');
-            const t = TRANSLATIONS[currentLang];
+        function updateInterface() {
+            const isMyTurn = (gState.turn === pNum);
+            const canRoll = gState.players >= 2 && isMyTurn && gState.roll === 0;
+            const statusEl = document.getElementById('gameStatus');
             
-            if(gameState.players < 2) {
-                status.innerText = t.wait;
-                rollBtn.disabled = true;
+            if(gState.players < 2) {
+                statusEl.innerText = TEXTS[lang].wait;
+                document.getElementById('rollBtn').disabled = true;
             } else {
-                status.innerText = isMyTurn ? t.yourTurn : t.enemyTurn;
-                rollBtn.disabled = !isMyTurn || gameState.roll !== null;
+                statusEl.innerText = isMyTurn ? TEXTS[lang].your : TEXTS[lang].enemy;
+                document.getElementById('rollBtn').disabled = !canRoll;
             }
-            document.getElementById('rollRes').innerText = gameState.roll || "—";
+            document.getElementById('rollVal').innerText = gState.roll || "—";
         }
 
-        function rollDice() {
+        function triggerRoll() {
             const r = Math.floor(Math.random() * 6) + 1;
-            db.ref('games/' + gameId).update({ roll: r });
+            db.ref('games/' + gId).update({ roll: r });
         }
 
-        function mark(i) {
-            if(gameState.turn !== playerNum || !gameState.roll || gameState.board[i] !== 0) return;
-            
+        function occupy(i) {
+            if(gState.turn !== pNum || !gState.roll || gState.board[i] !== 0) return;
             const col = i % 5;
-            if(gameState.roll !== 6 && col !== (gameState.roll - 1)) return;
+            if(gState.roll !== 6 && col !== (gState.roll - 1)) return;
 
-            const newBoard = [...gameState.board];
-            newBoard[i] = playerNum;
-            
-            let winner = checkWin(newBoard);
-            
-            db.ref('games/' + gameId).update({
-                board: newBoard,
-                turn: playerNum === 1 ? 2 : 1,
-                roll: null,
-                winner: winner ? playerNum : 0
+            const nextBoard = [...gState.board];
+            nextBoard[i] = pNum;
+            const isWin = checkWin(nextBoard);
+
+            db.ref('games/' + gId).update({
+                board: nextBoard,
+                turn: pNum === 1 ? 2 : 1,
+                roll: 0,
+                winner: isWin ? pNum : 0
             });
         }
 
         function checkWin(b) {
-            const lines = [
-                [0,1,2,3,4],[5,6,7,8,9],[10,11,12,13,14],[15,16,17,18,19],[20,21,22,23,24],
-                [0,5,10,15,20],[1,6,11,16,21],[2,7,12,17,22],[3,8,13,18,23],[4,9,14,19,24],
-                [0,6,12,18,24],[4,8,12,16,20]
-            ];
-            return lines.some(line => line.every(idx => b[idx] !== 0));
+            const wins = [[0,1,2,3,4],[5,6,7,8,9],[10,11,12,13,14],[15,16,17,18,19],[20,21,22,23,24], [0,5,10,15,20],[1,6,11,16,21],[2,7,12,17,22],[3,8,13,18,23],[4,9,14,19,24], [0,6,12,18,24],[4,8,12,16,20]];
+            return wins.some(w => w.every(idx => b[idx] !== 0));
         }
 
-        function render() {
-            const g = document.getElementById('grid');
+        function drawGrid() {
+            const g = document.getElementById('mainGrid');
             g.innerHTML = '';
-            gameState.board.forEach((v, i) => {
-                const d = document.createElement('div');
-                d.className = 'cell' + (v===1?' p1':v===2?' p2':v===3?' free':'');
-                d.innerText = v === 3 ? "FREE" : (currentLang === 'ru' ? WORDS[i] : WORDS[i]); 
-                d.onclick = () => mark(i);
-                g.appendChild(d);
+            gState.board.forEach((v, i) => {
+                const cell = document.createElement('div');
+                cell.className = 'cell' + (v===1?' p1':v===2?' p2':v===3?' free':'');
+                cell.innerText = v === 3 ? "VOID" : DICTIONARY[i];
+                cell.onclick = () => occupy(i);
+                g.appendChild(cell);
             });
         }
     </script>
