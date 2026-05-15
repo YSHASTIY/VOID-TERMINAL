@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TERMINAL 666 | BOT PROTOCOL</title>
+    <title>VOID TERMINAL | SOUND PROTOCOL</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
@@ -11,34 +11,35 @@
         :root { --blood: #8a0303; --neon: #0af; --dark: #050000; --panel: rgba(15, 0, 0, 0.9); }
         * { box-sizing: border-box; cursor: crosshair; user-select: none; }
         body, html { margin: 0; padding: 0; background: var(--dark); color: #b0a090; font-family: 'Share Tech Mono', monospace; height: 100%; overflow: hidden; }
+        
         .crt-overlay { position: fixed; inset: 0; pointer-events: none; z-index: 1000; background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), radial-gradient(circle, transparent 40%, black 150%); background-size: 100% 4px, 100% 100%; }
         .scanline { position: fixed; top: 0; width: 100%; height: 100px; background: linear-gradient(0deg, transparent, rgba(138, 3, 3, 0.1), transparent); animation: moveScan 8s linear infinite; pointer-events: none; z-index: 1001; }
         @keyframes moveScan { from { top: -100px; } to { top: 100%; } }
+
         .screen { display: none; width: 100vw; height: 100vh; flex-direction: column; align-items: center; justify-content: center; padding: 20px; z-index: 10; position: relative; }
         .screen.active { display: flex; }
         .logo { font-family: 'Bebas Neue'; font-size: clamp(50px, 12vw, 90px); color: var(--blood); text-shadow: 0 0 20px var(--blood); line-height: 0.8; text-align: center; margin-bottom: 20px; animation: flicker 0.15s infinite alternate; }
         @keyframes flicker { 0% { opacity: 0.8; } 100% { opacity: 1; } }
-        .btn { font-family: 'Bebas Neue'; font-size: 24px; background: #1a0000; border: 2px solid var(--blood); color: var(--blood); padding: 12px; width: 100%; max-width: 320px; margin: 8px; transition: 0.2s; letter-spacing: 2px; z-index: 20; }
+
+        .btn { font-family: 'Bebas Neue'; font-size: 24px; background: #1a0000; border: 2px solid var(--blood); color: var(--blood); padding: 12px; width: 100%; max-width: 320px; margin: 8px; transition: 0.2s; letter-spacing: 2px; z-index: 20; outline: none; }
         .btn:hover:not(:disabled) { background: var(--blood); color: #fff; box-shadow: 0 0 30px var(--blood); }
         .btn:disabled { opacity: 0.1; filter: grayscale(1); }
-        .lobby-warning { max-width: 400px; border: 1px solid #300; padding: 15px; margin-top: 15px; font-size: 11px; color: #555; background: rgba(5,0,0,0.8); }
+
         .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; width: 100%; max-width: 450px; aspect-ratio: 1/1; background: #111; padding: 6px; border: 1px solid #300; }
         .cell { background: #080000; border: 1px solid #222; display: flex; align-items: center; justify-content: center; text-align: center; font-size: clamp(8px, 2.5vw, 11px); color: #444; transition: 0.1s; aspect-ratio: 1/1; }
         .cell.p1 { background: var(--blood); color: #fff; box-shadow: inset 0 0 10px #000; }
         .cell.p2 { background: #004; color: #fff; box-shadow: inset 0 0 10px #000; border-color: var(--neon); }
         .cell.free { color: var(--blood); border: 1px dashed var(--blood); font-weight: bold; }
+
         .panel { background: var(--panel); border: 1px solid #400; padding: 20px; width: 280px; font-size: 13px; border-left: 4px solid var(--blood); }
         #rollVal { width: 65px; height: 65px; border: 2px solid var(--blood); display: flex; align-items: center; justify-content: center; font-family: 'Bebas Neue'; font-size: 36px; color: #f00; background: #000; }
         #endScreen { position: fixed; inset: 0; background: #000; z-index: 5000; display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
-        .creepy-text { position: fixed; font-size: 10px; color: #200; pointer-events: none; opacity: 0.4; z-index: 1; }
     </style>
 </head>
 <body>
 
     <div class="crt-overlay"></div>
     <div class="scanline"></div>
-    <div class="creepy-text" style="top: 5%; left: 5%;">LOG_EVT: HUMAN_VS_AI</div>
-    <div class="creepy-text" style="bottom: 5%; right: 5%;">ENCRYPTED_STREAM_666</div>
 
     <button style="position:fixed; top:20px; right:20px; z-index:2000; border:1px solid #444; background:#000; color:var(--neon); padding:5px 12px;" onclick="toggleLanguage()">RU / EN</button>
 
@@ -47,11 +48,6 @@
         <button class="btn" onclick="startSinglePlayer()" style="border-color: var(--neon); color: var(--neon);" data-t="single">ОДИНОЧНЫЙ СЕАНС</button>
         <button class="btn" onclick="startHost()" data-t="create">СОЗДАТЬ ЛОББИ</button>
         <button class="btn" onclick="switchScreen('scrJoin')" data-t="join">ПОДКЛЮЧИТЬСЯ</button>
-        
-        <div class="lobby-warning">
-            <b data-t="prot">ПРОТОКОЛ:</b>
-            <span data-t="rules">• Бот адаптируется к вашим ходам.<br>• Победа над ИИ очищает кэш вашей души.<br>• Ошибка 404: Сострадание не найдено.</span>
-        </div>
     </div>
 
     <div id="scrJoin" class="screen">
@@ -86,6 +82,52 @@
     </div>
 
     <script>
+        // --- ЗВУКОВОЙ ДВИЖОК ---
+        const TerminalAudio = {
+            ctx: null,
+            init() {
+                if (this.ctx) return;
+                this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+            },
+            playClick() {
+                this.init();
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(150, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(10, this.ctx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.1);
+                osc.connect(gain); gain.connect(this.ctx.destination);
+                osc.start(); osc.stop(this.ctx.currentTime + 0.1);
+            },
+            playStatic() {
+                this.init();
+                const bufferSize = this.ctx.sampleRate * 0.3;
+                const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+                const noise = this.ctx.createBufferSource();
+                noise.buffer = buffer;
+                const gain = this.ctx.createGain();
+                gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.3);
+                noise.connect(gain); gain.connect(this.ctx.destination);
+                noise.start();
+            },
+            playDeath() {
+                this.init();
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.frequency.setValueAtTime(100, this.ctx.currentTime);
+                osc.frequency.linearRampToValueAtTime(20, this.ctx.currentTime + 1.5);
+                gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 1.5);
+                osc.connect(gain); gain.connect(this.ctx.destination);
+                osc.start(); osc.stop(this.ctx.currentTime + 1.5);
+            }
+        };
+
         const firebaseConfig = {
             apiKey: "AIzaSyCE7WDfmIi5sMGpZpfLSi5vjpL7Mn2aLtA",
             authDomain: "fidelity-18c8a.firebaseapp.com",
@@ -104,13 +146,11 @@
             ru: { 
                 single: "ОДИНОЧНЫЙ СЕАНС", create:"СОЗДАТЬ ЛОББИ", join:"ПОДКЛЮЧИТЬСЯ", start:"ВОЙТИ", back:"НАЗАД", roll:"КУРОК", wait:"ОЖИДАНИЕ СУБЪЕКТА...", your:"ТВОЙ ХОД", enemy:"ВРАГ ЦЕЛИТСЯ...", 
                 botTurn: "ТЕРМИНАЛ ДУМАЕТ...", winT:"ВЫЖИЛ", winM:"Система не смогла вас сломить. Объект стабилен.", loseT:"СТЕРТ", loseM:"Интеллект превзошел плоть. Утилизация завершена.",
-                prot:"ПРОТОКОЛ:", rules: "• Бот адаптируется к вашим ходам.<br>• Победа над ИИ очищает кэш вашей души.<br>• Ошибка 404: Сострадание не найдено.",
                 instr: "1. Жми КУРОК.<br>2. Цифра — твоя колонка.<br>3. Займи клетку в ней.<br>4. 6 — любая клетка." 
             },
             en: { 
                 single: "SINGLE SESSION", create:"CREATE LOBBY", join:"CONNECT", start:"ENTER", back:"BACK", roll:"TRIGGER", wait:"AWAITING...", your:"YOUR TURN", enemy:"ENEMY AIMING...", 
                 botTurn: "TERMINAL THINKING...", winT:"STABLE", winM:"The system failed to break you. Subject stable.", loseT:"ERASED", loseM:"Intelligence surpassed flesh. Disposal complete.",
-                prot:"PROTOCOL:", rules: "• Bot adapts to your moves.<br>• Beating the AI cleanses your soul cache.<br>• Error 404: Compassion not found.",
                 instr: "1. Pull TRIGGER.<br>2. Number is your column.<br>3. Occupy cell there.<br>4. 6 is free choice." 
             }
         };
@@ -118,6 +158,7 @@
         const WORDS = ["БОЛЬ", "УЖАС", "ТЛЕН", "МОРГ", "ЯД", "БРЕД", "АГОНИЯ", "МРАК", "СТРАХ", "ПЫТКИ", "КРОВЬ", "КРИК", "ТЬМА", "ХАОС", "ГНИЛЬ", "СМЕРТЬ", "ПУСТОТА", "БЕЗДНА", "ШРАМ", "ГРЕХ", "ПЕТЛЯ", "ЗЛО", "РОК", "ГРОБ", "ТЕНЬ"];
 
         function toggleLanguage() {
+            TerminalAudio.playClick();
             lang = lang === 'ru' ? 'en' : 'ru';
             document.querySelectorAll('[data-t]').forEach(el => el.innerHTML = TEXTS[lang][el.getAttribute('data-t')] || el.innerText);
             document.getElementById('tInstr').innerHTML = TEXTS[lang].instr;
@@ -130,19 +171,18 @@
         }
 
         function startSinglePlayer() {
-            isBotMode = true;
-            pNum = 1;
-            gId = "LOCAL_BOT";
+            TerminalAudio.playClick();
+            isBotMode = true; pNum = 1; gId = "LOCAL_BOT";
             gState = { board: Array(25).fill(0), turn: 1, roll: 0, players: 2, winner: 0 };
             gState.board[12] = 3;
             switchScreen('scrGame');
             document.getElementById('displayId').innerText = "MODE: AI_CHALLENGE";
             document.getElementById('tInstr').innerHTML = TEXTS[lang].instr;
-            drawGrid();
-            updateUI();
+            drawGrid(); updateUI();
         }
 
         function startHost() {
+            TerminalAudio.playClick();
             isBotMode = false;
             gId = Math.random().toString(36).substring(2, 7).toUpperCase();
             pNum = 1;
@@ -152,6 +192,7 @@
         }
 
         function startJoin() {
+            TerminalAudio.playClick();
             isBotMode = false;
             gId = document.getElementById('joinInput').value.trim().toUpperCase();
             if(!gId) return;
@@ -180,7 +221,6 @@
             const statusEl = document.getElementById('gameStatus');
             const btn = document.getElementById('rollBtn');
             if(gState.winner) return;
-
             const isMyTurn = gState.turn === pNum;
             if(isBotMode && gState.turn === 2) {
                 statusEl.innerText = TEXTS[lang].botTurn;
@@ -197,6 +237,7 @@
         }
 
         function triggerRoll() {
+            TerminalAudio.playStatic();
             const r = Math.floor(Math.random() * 6) + 1;
             if(isBotMode) { gState.roll = r; drawGrid(); updateUI(); }
             else { db.ref('games/' + gId).update({ roll: r }); }
@@ -207,6 +248,7 @@
             const col = i % 5;
             if(gState.roll !== 6 && col !== (gState.roll - 1)) return;
 
+            TerminalAudio.playClick();
             gState.board[i] = pNum;
             gState.turn = isBotMode ? 2 : (pNum === 1 ? 2 : 1);
             gState.roll = 0;
@@ -220,25 +262,18 @@
             if(!isBotMode || gState.turn !== 2 || gState.winner) return;
             const r = Math.floor(Math.random() * 6) + 1;
             gState.roll = r;
-            
             let possibleMoves = [];
             gState.board.forEach((v, idx) => {
-                if(v === 0) {
-                    if(r === 6 || (idx % 5 === r - 1)) possibleMoves.push(idx);
-                }
+                if(v === 0 && (r === 6 || (idx % 5 === r - 1))) possibleMoves.push(idx);
             });
-
             if(possibleMoves.length > 0) {
                 const choice = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
                 gState.board[choice] = 2;
+                TerminalAudio.playClick();
             }
-            
-            gState.turn = 1;
-            gState.roll = 0;
+            gState.turn = 1; gState.roll = 0;
             gState.winner = checkWin(gState.board) ? 2 : 0;
-            
-            drawGrid();
-            updateUI();
+            drawGrid(); updateUI();
             if(gState.winner) showEnd(false);
         }
 
@@ -260,9 +295,12 @@
         }
 
         function showEnd(isWin) {
+            if (!isWin) TerminalAudio.playDeath();
+            else TerminalAudio.playClick();
             const es = document.getElementById('endScreen');
-            document.getElementById('endTitle').innerText = isWin ? TEXTS[lang].winT : TEXTS[lang].loseT;
-            document.getElementById('endTitle').style.color = isWin ? "#0af" : "#f00";
+            const title = document.getElementById('endTitle');
+            title.innerText = isWin ? TEXTS[lang].winT : TEXTS[lang].loseT;
+            title.style.color = isWin ? "#0af" : "#f00";
             document.getElementById('endMsg').innerText = isWin ? TEXTS[lang].winM : TEXTS[lang].loseM;
             es.style.display = 'flex';
             if(!isBotMode) db.ref('games/' + gId).remove();
