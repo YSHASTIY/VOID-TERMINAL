@@ -3,16 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>VOID TERMINAL | ULTIMATE</title>
+    <title>VOID TERMINAL | HEARTBEAT</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Special+Elite&family=Bebas+Neue&family=Share+Tech+Mono&display=swap');
         :root { --blood: #8a0303; --neon: #0af; --dark: #050000; --panel: rgba(15, 0, 0, 0.9); }
         * { box-sizing: border-box; cursor: crosshair; user-select: none; -webkit-tap-highlight-color: transparent; }
-        body, html { margin: 0; padding: 0; background: var(--dark); color: #b0a090; font-family: 'Share Tech Mono', monospace; height: 100%; overflow: hidden; }
+        body, html { margin: 0; padding: 0; background: var(--dark); color: #b0a090; font-family: 'Share Tech Mono', monospace; height: 100%; overflow: hidden; transition: transform 0.4s cubic-bezier(0.85, 0, 0.15, 1), opacity 0.4s; }
         
-        /* CRT & FX */
+        /* Эффект выключения ТВ */
+        .tv-off { transform: scaleY(0.005) scaleX(1.3); opacity: 0; }
+
         .crt-overlay { position: fixed; inset: 0; pointer-events: none; z-index: 1000; background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), radial-gradient(circle, transparent 40%, black 150%); background-size: 100% 4px, 100% 100%; }
         .scanline { position: fixed; top: 0; width: 100%; height: 100px; background: linear-gradient(0deg, transparent, rgba(138, 3, 3, 0.1), transparent); animation: moveScan 8s linear infinite; pointer-events: none; z-index: 1001; }
         @keyframes moveScan { from { top: -100px; } to { top: 100%; } }
@@ -21,7 +23,6 @@
         .screen.active { display: flex; }
         
         .logo { font-family: 'Bebas Neue'; font-size: clamp(40px, 10vw, 80px); color: var(--blood); text-shadow: 0 0 20px var(--blood); line-height: 0.8; text-align: center; margin-bottom: 20px; }
-        
         .btn { font-family: 'Bebas Neue'; font-size: 22px; background: #1a0000; border: 2px solid var(--blood); color: var(--blood); padding: 10px; width: 100%; max-width: 300px; margin: 5px; transition: 0.2s; letter-spacing: 2px; z-index: 20; outline: none; }
         .btn:hover:not(:disabled) { background: var(--blood); color: #fff; box-shadow: 0 0 30px var(--blood); }
         .btn:disabled { opacity: 0.1; }
@@ -34,10 +35,8 @@
         
         .panel { background: var(--panel); border: 1px solid #400; padding: 15px; width: 280px; font-size: 13px; border-left: 4px solid var(--blood); }
         #rollVal { width: 60px; height: 60px; border: 2px solid var(--blood); display: flex; align-items: center; justify-content: center; font-family: 'Bebas Neue'; font-size: 32px; color: #f00; background: #000; }
-        
         .lobby-list { width: 100%; max-width: 400px; height: 300px; overflow-y: auto; background: rgba(20,0,0,0.5); border: 1px solid #300; margin: 20px 0; padding: 10px; }
-        .lobby-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #200; font-family: 'Share Tech Mono'; color: var(--neon); font-size: 14px; }
-        
+        .lobby-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #200; color: var(--neon); font-size: 14px; }
         .input-dark { background:#000; border:1px solid #500; color:var(--neon); padding:15px; width:260px; text-align:center; font-size:20px; font-family:inherit; outline:none; margin-bottom:10px; text-transform: uppercase; }
         
         #endScreen { position: fixed; inset: 0; background: #000; z-index: 5000; display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
@@ -53,7 +52,7 @@
 
     <div id="scrMenu" class="screen active">
         <div class="logo">VOID<br>TERMINAL</div>
-        <button class="btn" onclick="startSinglePlayer()" style="border-color: var(--neon); color: var(--neon);" data-t="single">ОДИНОЧНЫЙ СЕАНС</button>
+        <button class="btn" onclick="startSinglePlayer()" data-t="single">ОДИНОЧНЫЙ СЕАНС</button>
         <button class="btn" onclick="openNickPrompt('HOST')" data-t="create">СОЗДАТЬ ЛОББИ</button>
         <button class="btn" onclick="switchScreen('scrJoin')" data-t="join">ПОДКЛЮЧИТЬСЯ</button>
         <button class="btn" onclick="openLobbyBrowser()" style="font-size: 16px; border-style: dotted;" data-t="list">СПИСОК ЛОББИ</button>
@@ -108,12 +107,11 @@
     </div>
 
     <script>
-        // Списки слов
         const MASTER_WORDS_RU = ["Гниль", "Трепанация", "Метастаз", "Некроз", "Судороги", "Асфиксия", "Распад", "Паразит", "Инъекция", "Токсин", "Гангрена", "Плесень", "Опухоль", "Личинка", "Пытка", "Ампутация", "Рвота", "Шрам", "Гной", "Труп", "Кома", "Фантом", "Перелом", "Вирус", "Спазм", "Безумие", "Кадавр", "Слизь", "Мутация", "Агония", "Слепота", "Удушье", "Сепсис", "Амнезия", "Психоз", "Фобия", "Каннибал", "Морг", "Петля", "Бездна", "Пустота", "Эрозия", "Травма", "Шизофрения", "Паралич", "Невроз", "Кошмар", "Паника", "Тремор", "Обморок", "Заражение", "Тлен", "Ожог", "Галлюцинация", "Стигматы", "Ритуал", "Жертва", "Алтарь", "Проклятие", "Демон", "Мрак", "Тень", "Одержимость", "Шепот", "Скрежет", "Вопль", "Смерть", "Погребение", "Могила", "Склеп", "Саван", "Пепел", "Ужас", "Страх", "Боль", "Отчаяние", "Гнев", "Порок", "Грех", "Вина", "Палач", "Тиски", "Игла", "Скальпель", "Пила", "Крюк", "Цепь", "Клетка", "Подвал", "Чердак", "Лабиринт", "Зеркало", "Маска", "Лицо", "Глаза", "Зубы", "Когти", "Кость", "Кровь", "Плоть", "Кожа", "Волосы", "Нерв", "Мозг", "Сердце", "Легкие", "Почка", "Печень", "Желудок", "Кишечник", "Язва", "Нарыв", "Свищ", "Грыжа", "Отек", "Тромб", "Инфаркт", "Инсульт", "Рак", "Диагноз", "Рецидив", "Клиника", "Палата", "Изолятор", "Смирительная", "Лоботомия", "Электрошок", "Препарат", "Доза", "Яд", "Ртуть", "Кислота", "Щелочь", "Радиация", "Изотоп", "Мутант", "Гибрид", "Клон", "Орган", "Донор", "Трансплантат", "Имплант", "Протез", "Сенсор", "Чип", "Провод", "Ток", "Разряд", "Импульс", "Сигнал", "Шум", "Помеха", "Глюк", "Ошибка", "Сбой", "Отказ", "Крах", "Коллапс", "Взрыв", "Пламя", "Дым", "Газ", "Пыль", "Грязь", "Мусор", "Отходы", "Стоки", "Канализация", "Крыса", "Насекомое", "Паук", "Клещ", "Червь", "Пиявка", "Оса", "Рой", "Улей", "Гнездо", "Нора", "Ловушка", "Капкан", "Петля", "Узел", "Верёвка", "Нож", "Бритва", "Шило", "Топор", "Молот", "Гвоздь"];
         const MASTER_WORDS_EN = ["Rot", "Trepanation", "Metastasis", "Necrosis", "Seizure", "Asphyxia", "Decay", "Parasite", "Injection", "Toxin", "Gangrene", "Mold", "Tumor", "Larva", "Torture", "Amputation", "Vomit", "Scar", "Pus", "Corpse", "Coma", "Phantom", "Fracture", "Virus", "Spasm", "Madness", "Cadaver", "Slime", "Mutation", "Agony", "Blindness", "Suffocation", "Sepsis", "Amnesia", "Psychosis", "Phobia", "Cannibal", "Morgue", "Noose", "Abyss", "Void", "Erosion", "Trauma", "Schizophrenia", "Paralysis", "Neurosis", "Nightmare", "Panic", "Tremor", "Fainting", "Infection", "Blight", "Burn", "Hallucination", "Stigmata", "Ritual", "Sacrifice", "Altar", "Curse", "Demon", "Gloom", "Shadow", "Possession", "Whisper", "Grind", "Scream", "Death", "Burial", "Grave", "Crypt", "Shroud", "Ash", "Horror", "Fear", "Pain", "Despair", "Wrath", "Vice", "Sin", "Guilt", "Hangman", "Vise", "Needle", "Scalpel", "Saw", "Hook", "Chain", "Cage", "Cellar", "Attic", "Maze", "Mirror", "Mask", "Face", "Eyes", "Teeth", "Claws", "Bone", "Blood", "Flesh", "Skin", "Hair", "Nerve", "Brain", "Heart", "Lungs", "Kidney", "Liver", "Stomach", "Intestine", "Ulcer", "Abscess", "Fistula", "Hernia", "Edema", "Thrombus", "Infarction", "Stroke", "Cancer", "Diagnosis", "Relapse", "Clinic", "Ward", "Isolator", "Straitjacket", "Lobotomy", "Electroshock", "Drug", "Dose", "Poison", "Mercury", "Acid", "Alkali", "Radiation", "Isotope", "Mutant", "Hybrid", "Clone", "Organ", "Donor", "Transplant", "Implant", "Prosthesis", "Sensor", "Chip", "Wire", "Current", "Discharge", "Impulse", "Signal", "Noise", "Glitch", "Error", "Fault", "Crash", "Collapse", "Explosion", "Flame", "Smoke", "Gas", "Dust", "Dirt", "Waste", "Sewage", "Rat", "Insect", "Spider", "Tick", "Worm", "Leech", "Wasp", "Swarm", "Hive", "Nest", "Burrow", "Trap", "Snare", "Knot", "Rope", "Knife", "Razor", "Awl", "Axe", "Hammer", "Nail"];
 
         const TerminalAudio = {
-            ctx: null, masterGain: null, ambientStarted: false,
+            ctx: null, masterGain: null, ambientStarted: false, pulseRate: 1800,
             init() { 
                 if (this.ctx) return; 
                 this.ctx = new (window.AudioContext || window.webkitAudioContext)(); 
@@ -126,49 +124,60 @@
             startAmbient() {
                 if (this.ambientStarted) return;
                 this.ambientStarted = true;
-
-                // Deep Drone (Гул)
                 const drone = this.ctx.createOscillator();
                 const dGain = this.ctx.createGain();
                 const filter = this.ctx.createBiquadFilter();
                 drone.type = 'sawtooth'; drone.frequency.value = 43.65;
-                filter.type = 'lowpass'; filter.frequency.value = 80;
-                dGain.gain.value = 0.08;
+                filter.type = 'lowpass'; filter.frequency.value = 60;
+                dGain.gain.value = 0.12;
                 drone.connect(filter); filter.connect(dGain); dGain.connect(this.masterGain);
                 drone.start();
+                this.playHeart();
+            },
 
-                // Brown Noise (Шум)
-                const bufferSize = 2 * this.ctx.sampleRate;
-                const noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
-                const output = noiseBuffer.getChannelData(0);
-                for (let i = 0; i < bufferSize; i++) output[i] = Math.random() * 2 - 1;
-                const noise = this.ctx.createBufferSource();
-                noise.buffer = noiseBuffer; noise.loop = true;
-                const nGain = this.ctx.createGain();
-                const nFilter = this.ctx.createBiquadFilter();
-                nFilter.type = 'lowpass'; nFilter.frequency.value = 120;
-                nGain.gain.value = 0.03;
-                noise.connect(nFilter); nFilter.connect(nGain); nGain.connect(this.masterGain);
-                noise.start();
+            playHeart() {
+                const now = this.ctx.currentTime;
+                [0, 0.35].forEach((delay, i) => {
+                    const osc = this.ctx.createOscillator();
+                    const g = this.ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(i === 0 ? 55 : 48, now + delay);
+                    osc.frequency.exponentialRampToValueAtTime(0.01, now + delay + 0.4);
+                    g.gain.setValueAtTime(0, now + delay);
+                    g.gain.linearRampToValueAtTime(i === 0 ? 0.3 : 0.2, now + delay + 0.05);
+                    g.gain.exponentialRampToValueAtTime(0.001, now + delay + 0.4);
+                    osc.connect(g); g.connect(this.masterGain);
+                    osc.start(now + delay); osc.stop(now + delay + 0.5);
+                });
+                // Цикл сердцебиения с использованием текущего pulseRate
+                setTimeout(() => this.playHeart(), this.pulseRate);
+            },
 
-                // Heartbeat (Пульс)
-                const playHeartbeat = () => {
-                    const now = this.ctx.currentTime;
-                    [0, 0.4].forEach(delay => {
-                        const osc = this.ctx.createOscillator();
-                        const g = this.ctx.createGain();
-                        osc.type = 'sine';
-                        osc.frequency.setValueAtTime(55, now + delay);
-                        osc.frequency.exponentialRampToValueAtTime(0.01, now + delay + 0.5);
-                        g.gain.setValueAtTime(0, now + delay);
-                        g.gain.linearRampToValueAtTime(0.12, now + delay + 0.05);
-                        g.gain.exponentialRampToValueAtTime(0.001, now + delay + 0.4);
-                        osc.connect(g); g.connect(this.masterGain);
-                        osc.start(now + delay); osc.stop(now + delay + 0.5);
-                    });
-                    setTimeout(playHeartbeat, 1700 + Math.random() * 500);
-                };
-                playHeartbeat();
+            updatePulse(occupancy) {
+                // occupancy от 0 до 25. Базовый темп 1800мс, быстрый 500мс.
+                this.pulseRate = Math.max(500, 1800 - (occupancy * 50));
+            },
+
+            playTvOff() {
+                if(!this.ctx) return;
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const g = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(800, now);
+                osc.frequency.exponentialRampToValueAtTime(14000, now + 0.3);
+                g.gain.setValueAtTime(0.3, now);
+                g.gain.exponentialRampToValueAtTime(0.0001, now + 0.35);
+                osc.connect(g); g.connect(this.masterGain);
+                osc.start(); osc.stop(now + 0.35);
+                
+                const click = this.ctx.createOscillator();
+                const cg = this.ctx.createGain();
+                click.type = 'square'; click.frequency.value = 60;
+                cg.gain.setValueAtTime(0.2, now);
+                cg.gain.linearRampToValueAtTime(0, now + 0.05);
+                click.connect(cg); cg.connect(this.masterGain);
+                click.start(); click.stop(now + 0.05);
             },
 
             playDataBurst() { 
@@ -190,7 +199,6 @@
             }
         };
 
-        // Firebase & Logic
         const firebaseConfig = { apiKey: "AIzaSyCE7WDfmIi5sMGpZpfLSi5vjpL7Mn2aLtA", authDomain: "fidelity-18c8a.firebaseapp.com", databaseURL: "https://fidelity-18c8a-default-rtdb.europe-west1.firebasedatabase.app", projectId: "fidelity-18c8a" };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
@@ -214,27 +222,23 @@
         function copyId() { navigator.clipboard.writeText(gId); const chip = document.getElementById('copyBtn'); chip.innerText = "DONE"; setTimeout(() => chip.innerText = "COPY", 1000); }
 
         function openNickPrompt(mode) {
-            document.getElementById('nickInput').value = myNick;
-            switchScreen('scrNick');
+            document.getElementById('nickInput').value = myNick; switchScreen('scrNick');
             document.getElementById('confirmNickBtn').onclick = () => {
                 const val = document.getElementById('nickInput').value.trim().toUpperCase();
-                if(!val) return;
-                myNick = val; localStorage.setItem('void_nick', myNick);
+                if(!val) return; myNick = val; localStorage.setItem('void_nick', myNick);
                 if(mode === 'HOST') startHost();
                 else if(mode === 'JOIN') startJoin(document.getElementById('joinInput').value);
             };
         }
 
         function openLobbyBrowser() {
-            switchScreen('scrLobby');
-            const listEl = document.getElementById('lobbyList');
+            switchScreen('scrLobby'); const listEl = document.getElementById('lobbyList');
             listEl.innerHTML = '<div style="text-align:center; padding:20px;">SCANNING...</div>';
             db.ref('games').once('value', s => {
                 listEl.innerHTML = ''; const games = s.val(); let found = false;
                 for (let id in games) {
                     if (games[id] && games[id].players === 1 && !games[id].winner) {
-                        found = true;
-                        const item = document.createElement('div');
+                        found = true; const item = document.createElement('div');
                         item.className = 'lobby-item';
                         item.innerHTML = `<span>${games[id].p1Nick || 'ANON'} [${id}]</span><button class="btn" style="width:70px; font-size:12px; margin:0; padding:5px;" onclick="openNickPromptWithId('${id}')">JOIN</button>`;
                         listEl.appendChild(item);
@@ -262,7 +266,7 @@
             sessionWords = [...sourceWords].sort(() => 0.5 - Math.random()).slice(0, 25);
             const data = { board: Array(25).fill(0), turn: 1, roll: 0, players: 1, winner: 0, words: sessionWords, p1Nick: myNick, p2Nick: "" };
             data.board[12] = 3; 
-            db.ref('games/' + gId).set(data).then(() => { listen(); });
+            db.ref('games/' + gId).set(data).then(() => listen());
             document.getElementById('copyBtn').style.display = 'block';
         }
 
@@ -278,14 +282,18 @@
             db.ref('games/' + gId).on('value', s => {
                 gState = s.val(); if(!gState) return; sessionWords = gState.words; 
                 document.getElementById('displayOpponent').innerText = pNum === 1 ? (gState.p2Nick || "WAITING...") : gState.p1Nick;
+                
+                // Считаем заполненность поля для пульса
+                const occupiedCount = gState.board.filter(v => v !== 0).length;
+                TerminalAudio.updatePulse(occupiedCount);
+                
                 drawGrid(); updateUI();
                 if(gState.winner) showEnd(gState.winner === pNum);
             });
         }
 
         function triggerRoll() {
-            TerminalAudio.playStatic();
-            const r = Math.floor(Math.random() * 6) + 1;
+            TerminalAudio.playStatic(); const r = Math.floor(Math.random() * 6) + 1;
             if(isBotMode) { 
                 gState.roll = r; updateUI(); drawGrid();
                 if(gState.turn === 2) setTimeout(botDecision, 800); 
@@ -296,12 +304,15 @@
             if(gState.turn !== pNum || !gState.roll || gState.board[i] !== 0) return;
             if(gState.roll !== 6 && (i % 5) !== (gState.roll - 1)) return;
             TerminalAudio.playDataBurst();
-            gState.board[i] = pNum;
-            gState.roll = 0;
+            gState.board[i] = pNum; gState.roll = 0;
             if(checkWin(gState.board)) gState.winner = pNum;
             else gState.turn = isBotMode ? 2 : (pNum === 1 ? 2 : 1);
-            if(isBotMode) { drawGrid(); updateUI(); if(!gState.winner && gState.turn === 2) setTimeout(botMove, 600); }
-            else { db.ref('games/' + gId).update(gState); }
+            if(isBotMode) { 
+                const count = gState.board.filter(v => v !== 0).length;
+                TerminalAudio.updatePulse(count);
+                drawGrid(); updateUI(); 
+                if(!gState.winner && gState.turn === 2) setTimeout(botMove, 600); 
+            } else { db.ref('games/' + gId).update(gState); }
         }
 
         function botMove() { if(!isBotMode || gState.winner || gState.turn !== 2) return; triggerRoll(); }
@@ -340,8 +351,7 @@
                     }
                 }
                 cell.innerText = v === 3 ? TEXTS[lang].system : sessionWords[i];
-                if(v === 0) cell.onclick = () => occupy(i); 
-                g.appendChild(cell);
+                if(v === 0) cell.onclick = () => occupy(i); g.appendChild(cell);
             });
         }
 
@@ -350,18 +360,25 @@
             document.getElementById('gameStatus').innerText = isBotMode && gState.turn === 2 ? TEXTS[lang].botTurn : (isMy ? TEXTS[lang].your : TEXTS[lang].enemy);
             document.getElementById('rollBtn').disabled = !isMy || gState.roll !== 0 || gState.players < 2;
             document.getElementById('rollVal').innerText = gState.roll || "—";
-            if(gState.winner) showEnd(gState.winner === pNum);
         }
 
         function showEnd(isWin) {
+            if (!isWin) {
+                TerminalAudio.playTvOff();
+                document.body.classList.add('tv-off');
+                setTimeout(() => {
+                    document.body.classList.remove('tv-off');
+                    renderFinal(isWin);
+                }, 600);
+            } else { renderFinal(isWin); }
+        }
+
+        function renderFinal(isWin) {
             document.getElementById('endTitle').innerText = isWin ? TEXTS[lang].winT : TEXTS[lang].loseT;
             document.getElementById('endTitle').style.color = isWin ? "#0af" : "#f00";
             document.getElementById('endMsg').innerText = isWin ? TEXTS[lang].winM : TEXTS[lang].loseM;
             switchScreen('endScreen'); document.getElementById('endScreen').style.display = 'flex';
         }
-
-        document.getElementById('tInstr').innerHTML = TEXTS[lang].instr;
-        document.getElementById('tProt').innerText = TEXTS[lang].protocol;
     </script>
 </body>
 </html>
