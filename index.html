@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>DEAD MAN BINGO | PROTOCOL 6.6.6</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Special+Elite&family=Bebas+Neue&family=Share+Tech+Mono&display=swap');
+
+    * { 
+      box-sizing: border-box; 
+      cursor: crosshair; 
+      user-select: none; 
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background: #000;
+      color: #b0a090;
+      font-family: 'Share Tech Mono', monospace;
+      overflow-x: hidden;
+      overflow-y: auto;
+    }
+
+    .tv-shell {
+      min-height: 100vh;
+      width: 100vw;
+      background: #050505;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    .screen {
+      flex: 1;
+      width: 100%;
+      min-height: 100vh;
+      background: radial-gradient(circle, #2a0505 0%, #050000 100%);
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      border: 10px solid #1a1a1a;
+      box-shadow: inset 0 0 100px rgba(0,0,0,1);
+    }
+
+    .screen::before {
+      content: " ";
+      display: block;
+      position: absolute;
+      top: 0; left: 0; bottom: 0; right: 0;
+      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.2) 50%);
+      z-index: 10;
+      background-size: 100% 4px;
+      pointer-events: none;
+    }
+
+    .content-wrap {
+      position: relative;
+      z-index: 5;
+      padding: 15px;
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .header-row {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .lang-panel {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      background: rgba(0,0,0,0.5);
+      padding: 5px;
+      border: 1px solid #333;
+    }
+
+    .lang-btn {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 16px;
+      background: #111;
+      border: 1px solid #444;
+      color: #555;
+      padding: 4px 12px;
+      cursor: pointer;
+    }
+
+    .lang-btn.active-ru { color: #f00; border-color: #800; box-shadow: 0 0 5px #f00; }
+    .lang-btn.active-en { color: #0af; border-color: #005; box-shadow: 0 0 5px #0af; }
+
+    .player-indicator {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 24px;
+      text-align: center;
+      letter-spacing: 2px;
+      padding: 5px;
+      background: rgba(20,0,0,0.8);
+      border-bottom: 2px solid #500;
+    }
+    .p1-active { color: #f00; text-shadow: 0 0 10px #f00; }
+    .p2-active { color: #0af; border-color: #0af; text-shadow: 0 0 10px #0af; }
+
+    .br-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(30px, 8vw, 70px);
+      text-align: center;
+      margin: 10px 0;
+      color: #600;
+    }
+    .br-title span { color: #f00; }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      gap: 15px;
+      margin-bottom: 15px;
+    }
+
+    .br-shotgun-btn {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 24px;
+      background: #400;
+      border: 3px solid #800;
+      color: #f00;
+      padding: 10px 30px;
+      flex-grow: 1;
+      max-width: 300px;
+    }
+
+    .br-die-display {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 40px;
+      background: #000;
+      border: 2px solid #500;
+      width: 70px; height: 70px;
+      display: flex; align-items: center; justify-content: center;
+      color: #f00;
+    }
+
+    .br-status {
+      text-align: center;
+      font-family: 'Special Elite', cursive;
+      font-size: 16px;
+      color: #844;
+      padding: 10px;
+      background: rgba(0,0,0,0.7);
+      margin-bottom: 15px;
+      min-height: 50px;
+      border: 1px solid #311;
+    }
+
+    .br-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      grid-template-rows: repeat(5, 1fr);
+      gap: 5px;
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      margin-bottom: 20px;
+    }
+
+    .br-cell {
+      background: rgba(15, 5, 5, 0.95);
+      border: 1px solid #322;
+      font-size: clamp(7px, 2vw, 12px);
+      color: #554;
+      display: flex; align-items: center; justify-content: center;
+      text-align: center;
+      padding: 2px;
+      overflow: hidden;
+      word-break: break-word;
+    }
+
+    .br-cell.p1-mark { background: #400; border-color: #f00; color: #fff; text-decoration: line-through; box-shadow: inset 0 0 10px #f00; }
+    .br-cell.p2-mark { background: #004; border-color: #0af; color: #fff; text-decoration: line-through; box-shadow: inset 0 0 10px #0af; }
+    .br-cell.free { color: #f00; border: 1px dashed #f00; font-weight: bold; }
+
+    /* Жуткие инфо-блоки */
+    .br-info {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      padding-bottom: 40px;
+    }
+    .br-info-block { border-left: 4px solid #600; padding: 5px 15px; background: rgba(20,0,0,0.5); position: relative; }
+    .br-info-block::after {
+      content: 'CONFIDENTIAL';
+      position: absolute;
+      right: 10px; top: 5px;
+      font-size: 10px; color: rgba(255,0,0,0.1);
+    }
+    .br-info-title { font-family: 'Bebas Neue'; color: #f00; font-size: 18px; letter-spacing: 1px; }
+    .br-info-text { font-size: 12px; color: #777; line-height: 1.4; }
+
+    .br-death-overlay {
+      display: none; position: fixed; inset: 0;
+      background: #000; z-index: 100;
+      flex-direction: column; align-items: center; justify-content: center;
+      padding: 20px; text-align: center;
+    }
+    .br-death-overlay.show { display: flex; }
+    .br-death-title { font-family: 'Bebas Neue'; font-size: 15vw; color: #f00; text-shadow: 0 0 30px #f00; }
+  </style>
+</head>
+<body>
+
+<div class="tv-shell">
+  <div class="screen">
+    <div class="content-wrap">
+      <div class="header-row">
+        <div class="lang-panel">
+          <button class="lang-btn" id="btnEn" onclick="setLang('en')">EN</button>
+          <button class="lang-btn" id="btnRu" onclick="setLang('ru')">RU</button>
+        </div>
+        <div id="pIndicator" class="player-indicator p1-active">ОБЪЕКТ_01: АКТИВЕН</div>
+      </div>
+
+      <h1 class="br-title">DEAD MAN <span>BINGO</span></h1>
+
+      <div class="controls">
+        <button class="br-shotgun-btn" onclick="rollShell()" id="triggerBtn">ЖМИ НА КУРОК</button>
+        <div class="br-die-display" id="dieDisplay">—</div>
+      </div>
+
+      <div class="br-status" id="statusText">ИНИЦИАЛИЗАЦИЯ ПАЦИЕНТОВ...</div>
+
+      <div class="br-grid" id="bingoGrid"></div>
+
+      <div class="br-info">
+        <div class="br-info-block">
+          <span class="br-info-title" id="rule1Title">МЕХАНИКА СМЕРТИ</span>
+          <div class="br-info-text" id="rule1Text">Жми на курок. Число укажет на столбец (1-5). Выбери грех в этом ряду, чтобы вычеркнуть его из своей (или чужой) жизни.</div>
+        </div>
+        <div class="br-info-block">
+          <span class="br-info-title" id="rule2Title">ПРОКЛЯТЬЕ ШЕСТЕРКИ</span>
+          <div class="br-info-text" id="rule2Text">Выпала 6? Ты — Палач. Выбирай любую клетку в любой колонке. Отметь её для себя или подтолкни противника к краю.</div>
+        </div>
+        <div class="br-info-block">
+          <span class="br-info-title" id="rule3Title">ФИНАЛЬНЫЙ АККОРД</span>
+          <div class="br-info-text" id="rule3Text">Тот, кто завершит линию из 5 клеток (горизонталь, вертикаль или диагональ), проигрывает всё. Линия — это петля. Не затягивай её.</div>
+        </div>
+        <div class="br-info-block" style="border-color: #222;">
+          <span class="br-info-title" style="color: #444;">REBOOT</span>
+          <div class="br-info-text" onclick="resetGame()" style="cursor:pointer; text-decoration: underline;">Очистить базу данных (Сброс)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="br-death-overlay" id="deathOverlay" onclick="resetGame()">
+    <div class="br-death-title" id="deathTitle">ERASED</div>
+    <div style="font-family: 'Special Elite'; color: #600; margin-top: 20px;">НАЧАТЬ НОВЫЙ ЭКСПЕРИМЕНТ</div>
+  </div>
+</div>
+
+<script>
+const LANGS = {
+  en: {
+    p1: 'SUBJECT_01: ACTIVE', p2: 'SUBJECT_02: ACTIVE', d1: 'SUBJECT_01: ERASED', d2: 'SUBJECT_02: ERASED',
+    roll: (n, c) => 'CHAMBER: ' + n + '. TARGET COL: ' + c, any: '☠ OVERRIDE! THE FATE IS IN YOUR HANDS.',
+    init: 'SYSTEM ONLINE. PULL THE TRIGGER.', trigger: 'PULL TRIGGER',
+    r1T: 'MECHANICS OF END', r1X: 'Pull the trigger. The number points to a column. Mark a cell in that column to seal the record.',
+    r2T: 'CURSE OF THE SIX', r2X: 'Rolled 6? You are the Executioner. Choose ANY cell to mark for yourself or your rival.',
+    r3T: 'THE FINAL LINE', r3X: 'Complete a line of 5 to lose. The line is a noose. Do not be the one to tighten it.',
+    cells: [
+      ['SADISM','ANXIETY','SELF-HARM','DIABETES','HEART FAILURE'],
+      ['TOXICITY','AGRESSION','BURNOUT','IGNORED PAIN','CHRONIC PAIN'],
+      ['VIOLENCE','CRIME','★ DOOMED ★','INSOMNIA','DEPENDENCE'],
+      ['ISOLATION','ALCOHOLISM','BINGE EATING','PANIC','PARANOIA'],
+      ['NARCOTICS','SMOKING','DELUSIONS','DEBT','DEPRESSION']
+    ]
+  },
+  ru: {
+    p1: 'ОБЪЕКТ_01: АКТИВЕН', p2: 'ОБЪЕКТ_02: АКТИВЕН', d1: 'ОБЪЕКТ_01: СТЕРТ', d2: 'ОБЪЕКТ_02: СТЕРТ',
+    roll: (n, c) => 'ВЫПАЛО: ' + n + '. СТОЛБЕЦ: ' + c, any: '☠ ПЕРЕХВАТ! СУДЬБА В ТВОИХ РУКАХ.',
+    init: 'СИСТЕМА ГОТОВА. ЖМИ НА КУРОК.', trigger: 'ЖМИ НА КУРОК',
+    r1T: 'МЕХАНИКА СМЕРТИ', r1X: 'Жми на курок. Число укажет на столбец (1-5). Выбери клетку в этом ряду, чтобы вычеркнуть её.',
+    r2T: 'ПРОКЛЯТЬЕ ШЕСТЕРКИ', r2X: 'Выпало 6? Ты — Палач. Выбирай ЛЮБУЮ клетку для себя или своего врага.',
+    r3T: 'ФИНАЛЬНЫЙ АККОРД', r3X: 'Тот, кто закроет линию из 5 клеток — проиграл. Линия — это петля. Не затягивай её.',
+    cells: [
+      ['САДИЗМ','ТРЕВОГА','SELF-HARM','ДИАБЕТ','ОТКАЗ СЕРДЦА'],
+      ['ТОКСИЧНОСТЬ','АГРЕССИЯ','ВЫГОРАНИЕ','ИГНОР БОЛИ','ХРОНИЧЕСКАЯ БОЛЬ'],
+      ['НАСИЛИЕ','ЗАКОН','★ ОБРЕЧЕН ★','БЕССОНИЦА','ЗАВИСИМОСТЬ'],
+      ['ИЗОЛЯЦИЯ','ПЬЯНСТВО','ЖОР','ПАНИКА','ПАРАНОЙЯ'],
+      ['НАРКОТИКИ','КУРЕНИЕ','БРЕД','ДОЛГИ','ДЕПРЕССИЯ']
+    ]
+  }
+};
+
+let lang = 'ru', curP = 1, marked = Array.from({length:5},()=>Array(5).fill(0)), lastRoll = null, activeCol = -2, over = false;
+marked[2][2] = 3;
+
+function setLang(l) { 
+  lang = l; 
+  document.getElementById('btnEn').className = 'lang-btn' + (l==='en' ? ' active-en' : '');
+  document.getElementById('btnRu').className = 'lang-btn' + (l==='ru' ? ' active-ru' : '');
+  updateUI(); 
+}
+
+function updateUI() {
+  const L = LANGS[lang];
+  document.getElementById('pIndicator').textContent = curP === 1 ? L.p1 : L.p2;
+  document.getElementById('pIndicator').className = 'player-indicator ' + (curP === 1 ? 'p1-active' : 'p2-active');
+  document.getElementById('triggerBtn').textContent = L.trigger;
+  document.getElementById('rule1Title').textContent = L.r1T; document.getElementById('rule1Text').textContent = L.r1X;
+  document.getElementById('rule2Title').textContent = L.r2T; document.getElementById('rule2Text').textContent = L.r2X;
+  document.getElementById('rule3Title').textContent = L.r3T; document.getElementById('rule3Text').textContent = L.r3X;
+  if(!lastRoll) document.getElementById('statusText').textContent = L.init;
+  render();
+}
+
+function render() {
+  const g = document.getElementById('bingoGrid'); g.innerHTML = '';
+  for(let r=0; r<5; r++) {
+    for(let c=0; c<5; c++) {
+      const div = document.createElement('div');
+      div.className = 'br-cell' + (marked[r][c] === 1 ? ' p1-mark' : marked[r][c] === 2 ? ' p2-mark' : '') + (r===2 && c===2 ? ' free' : '');
+      div.textContent = LANGS[lang].cells[r][c];
+      div.onclick = () => handleCell(r, c);
+      g.appendChild(div);
+    }
+  }
+}
+
+function rollShell() {
+  if(over || lastRoll) return;
+  let count = 0;
+  const inv = setInterval(() => {
+    document.getElementById('dieDisplay').textContent = Math.floor(Math.random()*6)+1;
+    if(++count > 15) {
+      clearInterval(inv);
+      lastRoll = Math.floor(Math.random()*6)+1;
+      document.getElementById('dieDisplay').textContent = lastRoll;
+      activeCol = lastRoll === 6 ? -1 : lastRoll - 1;
+      document.getElementById('statusText').textContent = lastRoll === 6 ? LANGS[lang].any : LANGS[lang].roll(lastRoll, (lastRoll));
+      render();
+    }
+  }, 50);
+}
+
+function handleCell(r, c) {
+  if(over || !lastRoll || marked[r][c] || (r===2 && c===2)) return;
+  if(lastRoll !== 6 && c !== activeCol) return;
+  marked[r][c] = curP;
+  if(checkWin()) {
+    over = true;
+    document.getElementById('deathTitle').textContent = curP === 1 ? LANGS[lang].d1 : LANGS[lang].d2;
+    document.getElementById('deathOverlay').classList.add('show');
+    return;
+  }
+  curP = curP === 1 ? 2 : 1;
+  lastRoll = null; activeCol = -2;
+  document.getElementById('dieDisplay').textContent = '—';
+  updateUI();
+}
+
+function checkWin() {
+  const lines = [];
+  for(let i=0; i<5; i++) {
+    lines.push([[i,0],[i,1],[i,2],[i,3],[i,4]]);
+    lines.push([[0,i],[1,i],[2,i],[3,i],[4,i]]);
+  }
+  lines.push([[0,0],[1,1],[2,2],[3,3],[4,4]], [[0,4],[1,3],[2,2],[3,1],[4,0]]);
+  return lines.some(line => line.every(([r,c]) => marked[r][c] !== 0));
+}
+
+function resetGame() {
+  marked = Array.from({length:5},()=>Array(5).fill(0)); marked[2][2] = 3;
+  curP = 1; lastRoll = null; activeCol = -2; over = false;
+  document.getElementById('deathOverlay').classList.remove('show');
+  document.getElementById('dieDisplay').textContent = '—';
+  updateUI();
+}
+
+setLang('ru');
+</script>
+</body>
+</html>
