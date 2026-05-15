@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>VOID TERMINAL | MULTI-LAYER SOUND</title>
+    <title>VOID TERMINAL | HEARTBEAT PROTOCOL</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
@@ -11,26 +11,20 @@
         :root { --blood: #8a0303; --neon: #0af; --dark: #050000; --panel: rgba(15, 0, 0, 0.9); }
         * { box-sizing: border-box; cursor: crosshair; user-select: none; }
         body, html { margin: 0; padding: 0; background: var(--dark); color: #b0a090; font-family: 'Share Tech Mono', monospace; height: 100%; overflow: hidden; }
-        
         .crt-overlay { position: fixed; inset: 0; pointer-events: none; z-index: 1000; background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), radial-gradient(circle, transparent 40%, black 150%); background-size: 100% 4px, 100% 100%; }
         .scanline { position: fixed; top: 0; width: 100%; height: 100px; background: linear-gradient(0deg, transparent, rgba(138, 3, 3, 0.1), transparent); animation: moveScan 8s linear infinite; pointer-events: none; z-index: 1001; }
         @keyframes moveScan { from { top: -100px; } to { top: 100%; } }
-
         .screen { display: none; width: 100vw; height: 100vh; flex-direction: column; align-items: center; justify-content: center; padding: 20px; z-index: 10; position: relative; }
         .screen.active { display: flex; }
         .logo { font-family: 'Bebas Neue'; font-size: clamp(50px, 12vw, 90px); color: var(--blood); text-shadow: 0 0 20px var(--blood); line-height: 0.8; text-align: center; margin-bottom: 20px; animation: flicker 0.15s infinite alternate; }
-        @keyframes flicker { 0% { opacity: 0.8; } 100% { opacity: 1; } }
-
         .btn { font-family: 'Bebas Neue'; font-size: 24px; background: #1a0000; border: 2px solid var(--blood); color: var(--blood); padding: 12px; width: 100%; max-width: 320px; margin: 8px; transition: 0.2s; letter-spacing: 2px; z-index: 20; outline: none; }
         .btn:hover:not(:disabled) { background: var(--blood); color: #fff; box-shadow: 0 0 30px var(--blood); }
         .btn:disabled { opacity: 0.1; filter: grayscale(1); }
-
         .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; width: 100%; max-width: 450px; aspect-ratio: 1/1; background: #111; padding: 6px; border: 1px solid #300; }
         .cell { background: #080000; border: 1px solid #222; display: flex; align-items: center; justify-content: center; text-align: center; font-size: clamp(8px, 2.5vw, 11px); color: #444; transition: 0.1s; aspect-ratio: 1/1; }
         .cell.p1 { background: var(--blood); color: #fff; box-shadow: inset 0 0 10px #000; }
         .cell.p2 { background: #004; color: #fff; box-shadow: inset 0 0 10px #000; border-color: var(--neon); }
         .cell.free { color: var(--blood); border: 1px dashed var(--blood); font-weight: bold; }
-
         .panel { background: var(--panel); border: 1px solid #400; padding: 20px; width: 280px; font-size: 13px; border-left: 4px solid var(--blood); }
         #rollVal { width: 65px; height: 65px; border: 2px solid var(--blood); display: flex; align-items: center; justify-content: center; font-family: 'Bebas Neue'; font-size: 36px; color: #f00; background: #000; }
         #endScreen { position: fixed; inset: 0; background: #000; z-index: 5000; display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
@@ -86,6 +80,9 @@
             ctx: null,
             masterGain: null,
             ambientStarted: false,
+            heartbeatTimer: null,
+            bpm: 60,
+
             init() {
                 if (this.ctx) return;
                 this.ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -93,90 +90,104 @@
                 this.masterGain.connect(this.ctx.destination);
                 this.startAmbient();
             },
-            // Глубокий пульсирующий фон
+
             startAmbient() {
                 if (this.ambientStarted) return;
                 this.ambientStarted = true;
-                
-                const createOsc = (f, vol) => {
-                    const osc = this.ctx.createOscillator();
-                    const g = this.ctx.createGain();
-                    const lfo = this.ctx.createOscillator();
-                    const lfoG = this.ctx.createGain();
-                    
-                    osc.frequency.value = f;
-                    lfo.frequency.value = 0.1 + Math.random() * 0.2;
-                    lfoG.gain.value = 0.02;
-                    
-                    lfo.connect(lfoG);
-                    lfoG.connect(g.gain);
-                    osc.connect(g);
-                    g.connect(this.masterGain);
-                    
-                    g.gain.value = vol;
-                    osc.start(); lfo.start();
-                };
-
-                createOsc(55, 0.05); // Низкий гул
-                createOsc(110, 0.02); // Гармоника
-            },
-            // Динамический звук кнопки (каждый раз разный)
-            playClick() {
-                this.init();
-                const frequencies = [200, 300, 450, 600, 850];
-                const f = frequencies[Math.floor(Math.random() * frequencies.length)];
-                
                 const osc = this.ctx.createOscillator();
                 const g = this.ctx.createGain();
-                osc.type = Math.random() > 0.5 ? 'square' : 'triangle';
-                osc.frequency.setValueAtTime(f, this.ctx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(f/2, this.ctx.currentTime + 0.1);
-                
-                g.gain.setValueAtTime(0.1, this.ctx.currentTime);
+                osc.frequency.value = 40;
+                g.gain.value = 0.03;
+                osc.connect(g); g.connect(this.masterGain);
+                osc.start();
+            },
+
+            // Система сердцебиения
+            startHeartbeat() {
+                if(this.heartbeatTimer) return;
+                const beat = () => {
+                    this.playHeartSound();
+                    // Рассчитываем темп на основе заполненности поля
+                    const filledCells = gState ? gState.board.filter(c => c !== 0 && c !== 3).length : 0;
+                    this.bpm = 60 + (filledCells * 6); // Ускоряемся с каждой ячейкой
+                    const interval = (60 / this.bpm) * 1000;
+                    this.heartbeatTimer = setTimeout(beat, interval);
+                };
+                beat();
+            },
+
+            stopHeartbeat() {
+                clearTimeout(this.heartbeatTimer);
+                this.heartbeatTimer = null;
+            },
+
+            playHeartSound() {
+                const playShot = (freq, vol, delay) => {
+                    const osc = this.ctx.createOscillator();
+                    const g = this.ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, this.ctx.currentTime + delay);
+                    osc.frequency.exponentialRampToValueAtTime(1, this.ctx.currentTime + delay + 0.1);
+                    g.gain.setValueAtTime(vol, this.ctx.currentTime + delay);
+                    g.gain.linearRampToValueAtTime(0, this.ctx.currentTime + delay + 0.1);
+                    osc.connect(g); g.connect(this.masterGain);
+                    osc.start(this.ctx.currentTime + delay);
+                    osc.stop(this.ctx.currentTime + delay + 0.1);
+                };
+                playShot(60, 0.15, 0);      // Первый удар
+                playShot(45, 0.1, 0.15);    // Второй удар (эхо)
+            },
+
+            playClick() {
+                this.init();
+                const osc = this.ctx.createOscillator();
+                const g = this.ctx.createGain();
+                osc.frequency.value = 400 + Math.random() * 200;
+                g.gain.setValueAtTime(0.05, this.ctx.currentTime);
                 g.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.1);
-                
                 osc.connect(g); g.connect(this.masterGain);
                 osc.start(); osc.stop(this.ctx.currentTime + 0.1);
             },
-            // Звук "Записи данных" для клеток
+
             playDataBurst() {
                 this.init();
-                for(let i=0; i<5; i++) {
+                for(let i=0; i<3; i++) {
                     setTimeout(() => {
                         const osc = this.ctx.createOscillator();
                         const g = this.ctx.createGain();
                         osc.type = 'sawtooth';
-                        osc.frequency.value = 2000 + Math.random() * 3000;
+                        osc.frequency.value = 1000 + Math.random() * 1000;
                         g.gain.setValueAtTime(0.02, this.ctx.currentTime);
-                        g.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.02);
+                        g.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.05);
                         osc.connect(g); g.connect(this.masterGain);
-                        osc.start(); osc.stop(this.ctx.currentTime + 0.02);
-                    }, i * 30);
+                        osc.start(); osc.stop(this.ctx.currentTime + 0.05);
+                    }, i * 40);
                 }
             },
+
             playStatic() {
                 this.init();
-                const buf = this.ctx.createBuffer(1, this.ctx.sampleRate * 0.4, this.ctx.sampleRate);
-                const data = buf.getChannelData(0);
-                for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+                const buf = this.ctx.createBuffer(1, this.ctx.sampleRate * 0.3, this.ctx.sampleRate);
+                const d = buf.getChannelData(0);
+                for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
                 const src = this.ctx.createBufferSource();
                 src.buffer = buf;
                 const g = this.ctx.createGain();
-                g.gain.setValueAtTime(0.08, this.ctx.currentTime);
-                g.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.4);
+                g.gain.setValueAtTime(0.05, this.ctx.currentTime);
+                g.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.3);
                 src.connect(g); g.connect(this.masterGain);
                 src.start();
             },
+
             playDeath() {
                 this.init();
+                this.stopHeartbeat();
                 const osc = this.ctx.createOscillator();
                 const g = this.ctx.createGain();
-                osc.frequency.setValueAtTime(120, this.ctx.currentTime);
-                osc.frequency.linearRampToValueAtTime(10, this.ctx.currentTime + 2.5);
-                g.gain.setValueAtTime(0.3, this.ctx.currentTime);
-                g.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 2.5);
+                osc.frequency.linearRampToValueAtTime(1, this.ctx.currentTime + 3);
+                g.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 3);
                 osc.connect(g); g.connect(this.masterGain);
-                osc.start(); osc.stop(this.ctx.currentTime + 2.5);
+                osc.start(); osc.stop(this.ctx.currentTime + 3);
             }
         };
 
@@ -222,6 +233,7 @@
             gState.board[12] = 3;
             switchScreen('scrGame');
             document.getElementById('displayId').innerText = "MODE: AI_CHALLENGE";
+            TerminalAudio.startHeartbeat();
             drawGrid(); updateUI();
         }
 
@@ -232,7 +244,10 @@
             pNum = 1;
             const data = { board: Array(25).fill(0), turn: 1, roll: 0, players: 1, winner: 0 };
             data.board[12] = 3;
-            db.ref('games/' + gId).set(data).then(listen);
+            db.ref('games/' + gId).set(data).then(() => {
+                listen();
+                TerminalAudio.startHeartbeat();
+            });
         }
 
         function startJoin() {
@@ -245,6 +260,7 @@
                 if(s.exists()){
                     db.ref('games/' + gId).update({ players: 2 });
                     listen();
+                    TerminalAudio.startHeartbeat();
                 } else { TerminalAudio.playDeath(); }
             });
         }
@@ -290,13 +306,11 @@
             if(gState.turn !== pNum || !gState.roll || gState.board[i] !== 0) return;
             const col = i % 5;
             if(gState.roll !== 6 && col !== (gState.roll - 1)) return;
-
             TerminalAudio.playDataBurst();
             gState.board[i] = pNum;
             gState.turn = isBotMode ? 2 : (pNum === 1 ? 2 : 1);
             gState.roll = 0;
             gState.winner = checkWin(gState.board) ? pNum : 0;
-
             if(isBotMode) { drawGrid(); updateUI(); if(gState.winner) showEnd(true); }
             else { db.ref('games/' + gId).update(gState); }
         }
@@ -325,6 +339,7 @@
 
         function drawGrid() {
             const g = document.getElementById('mainGrid');
+            if(!g) return;
             g.innerHTML = '';
             gState.board.forEach((v, i) => {
                 const cell = document.createElement('div');
@@ -336,6 +351,7 @@
         }
 
         function showEnd(isWin) {
+            TerminalAudio.stopHeartbeat();
             if (!isWin) TerminalAudio.playDeath();
             else TerminalAudio.playDataBurst();
             document.getElementById('endTitle').innerText = isWin ? TEXTS[lang].winT : TEXTS[lang].loseT;
