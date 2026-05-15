@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>VOID TERMINAL | HEARTBEAT PROTOCOL</title>
+    <title>VOID TERMINAL | BALANCED SOUND</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
@@ -102,14 +102,12 @@
                 osc.start();
             },
 
-            // Система сердцебиения
             startHeartbeat() {
                 if(this.heartbeatTimer) return;
                 const beat = () => {
                     this.playHeartSound();
-                    // Рассчитываем темп на основе заполненности поля
                     const filledCells = gState ? gState.board.filter(c => c !== 0 && c !== 3).length : 0;
-                    this.bpm = 60 + (filledCells * 6); // Ускоряемся с каждой ячейкой
+                    this.bpm = 60 + (filledCells * 6);
                     const interval = (60 / this.bpm) * 1000;
                     this.heartbeatTimer = setTimeout(beat, interval);
                 };
@@ -134,8 +132,8 @@
                     osc.start(this.ctx.currentTime + delay);
                     osc.stop(this.ctx.currentTime + delay + 0.1);
                 };
-                playShot(60, 0.15, 0);      // Первый удар
-                playShot(45, 0.1, 0.15);    // Второй удар (эхо)
+                playShot(60, 0.1, 0);       // Первый удар (тише)
+                playShot(45, 0.05, 0.15);   // Второй удар (тише)
             },
 
             playClick() {
@@ -143,7 +141,7 @@
                 const osc = this.ctx.createOscillator();
                 const g = this.ctx.createGain();
                 osc.frequency.value = 400 + Math.random() * 200;
-                g.gain.setValueAtTime(0.05, this.ctx.currentTime);
+                g.gain.setValueAtTime(0.04, this.ctx.currentTime);
                 g.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.1);
                 osc.connect(g); g.connect(this.masterGain);
                 osc.start(); osc.stop(this.ctx.currentTime + 0.1);
@@ -157,7 +155,7 @@
                         const g = this.ctx.createGain();
                         osc.type = 'sawtooth';
                         osc.frequency.value = 1000 + Math.random() * 1000;
-                        g.gain.setValueAtTime(0.02, this.ctx.currentTime);
+                        g.gain.setValueAtTime(0.015, this.ctx.currentTime);
                         g.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.05);
                         osc.connect(g); g.connect(this.masterGain);
                         osc.start(); osc.stop(this.ctx.currentTime + 0.05);
@@ -173,7 +171,7 @@
                 const src = this.ctx.createBufferSource();
                 src.buffer = buf;
                 const g = this.ctx.createGain();
-                g.gain.setValueAtTime(0.05, this.ctx.currentTime);
+                g.gain.setValueAtTime(0.04, this.ctx.currentTime);
                 g.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.3);
                 src.connect(g); g.connect(this.masterGain);
                 src.start();
@@ -184,7 +182,10 @@
                 this.stopHeartbeat();
                 const osc = this.ctx.createOscillator();
                 const g = this.ctx.createGain();
+                osc.type = 'sine'; // Сменил на sine для более мягкого звука
+                osc.frequency.setValueAtTime(100, this.ctx.currentTime);
                 osc.frequency.linearRampToValueAtTime(1, this.ctx.currentTime + 3);
+                g.gain.setValueAtTime(0.1, this.ctx.currentTime); // СИЛЬНО ТИШЕ
                 g.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 3);
                 osc.connect(g); g.connect(this.masterGain);
                 osc.start(); osc.stop(this.ctx.currentTime + 3);
