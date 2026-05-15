@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>VOID TERMINAL | BALANCED SOUND</title>
+    <title>VOID TERMINAL | 200 VOICES</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
@@ -21,8 +21,8 @@
         .btn:hover:not(:disabled) { background: var(--blood); color: #fff; box-shadow: 0 0 30px var(--blood); }
         .btn:disabled { opacity: 0.1; filter: grayscale(1); }
         .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; width: 100%; max-width: 450px; aspect-ratio: 1/1; background: #111; padding: 6px; border: 1px solid #300; }
-        .cell { background: #080000; border: 1px solid #222; display: flex; align-items: center; justify-content: center; text-align: center; font-size: clamp(8px, 2.5vw, 11px); color: #444; transition: 0.1s; aspect-ratio: 1/1; }
-        .cell.p1 { background: var(--blood); color: #fff; box-shadow: inset 0 0 10px #000; }
+        .cell { background: #080000; border: 1px solid #222; display: flex; align-items: center; justify-content: center; text-align: center; font-size: clamp(6px, 1.8vw, 9px); color: #444; transition: 0.1s; aspect-ratio: 1/1; overflow: hidden; padding: 2px; text-transform: uppercase; }
+        .cell.p1 { background: var(--blood); color: #fff; box-shadow: inset 0 0 10px #000; border-color: #f00; }
         .cell.p2 { background: #004; color: #fff; box-shadow: inset 0 0 10px #000; border-color: var(--neon); }
         .cell.free { color: var(--blood); border: 1px dashed var(--blood); font-weight: bold; }
         .panel { background: var(--panel); border: 1px solid #400; padding: 20px; width: 280px; font-size: 13px; border-left: 4px solid var(--blood); }
@@ -76,13 +76,30 @@
     </div>
 
     <script>
-        const TerminalAudio = {
-            ctx: null,
-            masterGain: null,
-            ambientStarted: false,
-            heartbeatTimer: null,
-            bpm: 60,
+        const MASTER_WORDS = [
+            "Гниль", "Трепанация", "Метастаз", "Некроз", "Судороги", "Асфиксия", "Распад", "Паразит", "Инъекция", "Токсин",
+            "Гангрена", "Плесень", "Опухоль", "Личинка", "Пытка", "Ампутация", "Рвота", "Шрам", "Гной", "Труп",
+            "Кома", "Фантом", "Перелом", "Вирус", "Спазм", "Безумие", "Кадавр", "Слизь", "Мутация", "Агония",
+            "Слепота", "Удушье", "Сепсис", "Амнезия", "Психоз", "Фобия", "Каннибал", "Морг", "Петля", "Бездна",
+            "Пустота", "Эрозия", "Травма", "Шизофрения", "Паралич", "Невроз", "Кошмар", "Паника", "Тремор", "Обморок",
+            "Заражение", "Тлен", "Ожог", "Галлюцинация", "Стигматы", "Ритуал", "Жертва", "Алтарь", "Проклятие", "Демон",
+            "Мрак", "Тень", "Одержимость", "Шепот", "Скрежет", "Вопль", "Смерть", "Погребение", "Могила", "Склеп",
+            "Саван", "Пепел", "Ужас", "Страх", "Боль", "Отчаяние", "Гнев", "Порок", "Грех", "Вина",
+            "Палач", "Тиски", "Игла", "Скальпель", "Пила", "Крюк", "Цепь", "Клетка", "Подвал", "Чердак",
+            "Лабиринт", "Зеркало", "Маска", "Лицо", "Глаза", "Зубы", "Когти", "Кость", "Кровь", "Плоть",
+            "Кожа", "Волосы", "Нерв", "Мозг", "Сердце", "Легкие", "Почка", "Печень", "Желудок", "Кишечник",
+            "Язва", "Нарыв", "Свищ", "Грыжа", "Отек", "Тромб", "Инфаркт", "Инсульт", "Рак", "Диагноз",
+            "Рецидив", "Клиника", "Палата", "Изолятор", "Смирительная", "Лоботомия", "Электрошок", "Препарат", "Доза", "Яд",
+            "Ртуть", "Кислота", "Щелочь", "Радиация", "Изотоп", "Мутант", "Гибрид", "Клон", "Орган", "Донор",
+            "Трансплантат", "Имплант", "Протез", "Сенсор", "Чип", "Провод", "Ток", "Разряд", "Импульс", "Сигнал",
+            "Шум", "Помеха", "Глюк", "Ошибка", "Сбой", "Отказ", "Крах", "Коллапс", "Взрыв", "Пламя",
+            "Дым", "Газ", "Пыль", "Грязь", "Мусор", "Отходы", "Стоки", "Канализация", "Крыса", "Насекомое",
+            "Паук", "Клещ", "Червь", "Пиявка", "Оса", "Рой", "Улей", "Гнездо", "Нора", "Ловушка",
+            "Капкан", "Петля", "Узел", "Верёвка", "Нож", "Бритва", "Шило", "Топор", "Молот", "Гвоздь"
+        ];
 
+        const TerminalAudio = {
+            ctx: null, masterGain: null, ambientStarted: false, heartbeatTimer: null, bpm: 60,
             init() {
                 if (this.ctx) return;
                 this.ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -90,71 +107,52 @@
                 this.masterGain.connect(this.ctx.destination);
                 this.startAmbient();
             },
-
             startAmbient() {
                 if (this.ambientStarted) return;
                 this.ambientStarted = true;
                 const osc = this.ctx.createOscillator();
                 const g = this.ctx.createGain();
-                osc.frequency.value = 40;
-                g.gain.value = 0.03;
+                osc.frequency.value = 40; g.gain.value = 0.03;
                 osc.connect(g); g.connect(this.masterGain);
                 osc.start();
             },
-
             startHeartbeat() {
                 if(this.heartbeatTimer) return;
                 const beat = () => {
                     this.playHeartSound();
                     const filledCells = gState ? gState.board.filter(c => c !== 0 && c !== 3).length : 0;
-                    this.bpm = 60 + (filledCells * 6);
-                    const interval = (60 / this.bpm) * 1000;
-                    this.heartbeatTimer = setTimeout(beat, interval);
+                    this.bpm = 60 + (filledCells * 7);
+                    this.heartbeatTimer = setTimeout(beat, (60 / this.bpm) * 1000);
                 };
                 beat();
             },
-
-            stopHeartbeat() {
-                clearTimeout(this.heartbeatTimer);
-                this.heartbeatTimer = null;
-            },
-
+            stopHeartbeat() { clearTimeout(this.heartbeatTimer); this.heartbeatTimer = null; },
             playHeartSound() {
                 const playShot = (freq, vol, delay) => {
-                    const osc = this.ctx.createOscillator();
-                    const g = this.ctx.createGain();
-                    osc.type = 'sine';
-                    osc.frequency.setValueAtTime(freq, this.ctx.currentTime + delay);
+                    const osc = this.ctx.createOscillator(); const g = this.ctx.createGain();
+                    osc.type = 'sine'; osc.frequency.setValueAtTime(freq, this.ctx.currentTime + delay);
                     osc.frequency.exponentialRampToValueAtTime(1, this.ctx.currentTime + delay + 0.1);
                     g.gain.setValueAtTime(vol, this.ctx.currentTime + delay);
                     g.gain.linearRampToValueAtTime(0, this.ctx.currentTime + delay + 0.1);
                     osc.connect(g); g.connect(this.masterGain);
-                    osc.start(this.ctx.currentTime + delay);
-                    osc.stop(this.ctx.currentTime + delay + 0.1);
+                    osc.start(this.ctx.currentTime + delay); osc.stop(this.ctx.currentTime + delay + 0.1);
                 };
-                playShot(60, 0.1, 0);       // Первый удар (тише)
-                playShot(45, 0.05, 0.15);   // Второй удар (тише)
+                playShot(55, 0.1, 0); playShot(40, 0.05, 0.15);
             },
-
             playClick() {
-                this.init();
-                const osc = this.ctx.createOscillator();
-                const g = this.ctx.createGain();
-                osc.frequency.value = 400 + Math.random() * 200;
+                this.init(); const osc = this.ctx.createOscillator(); const g = this.ctx.createGain();
+                osc.frequency.value = 300 + Math.random() * 100;
                 g.gain.setValueAtTime(0.04, this.ctx.currentTime);
                 g.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.1);
                 osc.connect(g); g.connect(this.masterGain);
                 osc.start(); osc.stop(this.ctx.currentTime + 0.1);
             },
-
             playDataBurst() {
                 this.init();
                 for(let i=0; i<3; i++) {
                     setTimeout(() => {
-                        const osc = this.ctx.createOscillator();
-                        const g = this.ctx.createGain();
-                        osc.type = 'sawtooth';
-                        osc.frequency.value = 1000 + Math.random() * 1000;
+                        const osc = this.ctx.createOscillator(); const g = this.ctx.createGain();
+                        osc.type = 'sawtooth'; osc.frequency.value = 800 + Math.random() * 800;
                         g.gain.setValueAtTime(0.015, this.ctx.currentTime);
                         g.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.05);
                         osc.connect(g); g.connect(this.masterGain);
@@ -162,33 +160,24 @@
                     }, i * 40);
                 }
             },
-
             playStatic() {
                 this.init();
                 const buf = this.ctx.createBuffer(1, this.ctx.sampleRate * 0.3, this.ctx.sampleRate);
-                const d = buf.getChannelData(0);
-                for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
-                const src = this.ctx.createBufferSource();
-                src.buffer = buf;
-                const g = this.ctx.createGain();
-                g.gain.setValueAtTime(0.04, this.ctx.currentTime);
+                const d = buf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+                const src = this.ctx.createBufferSource(); src.buffer = buf;
+                const g = this.ctx.createGain(); g.gain.setValueAtTime(0.03, this.ctx.currentTime);
                 g.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.3);
-                src.connect(g); g.connect(this.masterGain);
-                src.start();
+                src.connect(g); g.connect(this.masterGain); src.start();
             },
-
             playDeath() {
-                this.init();
-                this.stopHeartbeat();
-                const osc = this.ctx.createOscillator();
-                const g = this.ctx.createGain();
-                osc.type = 'sine'; // Сменил на sine для более мягкого звука
-                osc.frequency.setValueAtTime(100, this.ctx.currentTime);
-                osc.frequency.linearRampToValueAtTime(1, this.ctx.currentTime + 3);
-                g.gain.setValueAtTime(0.1, this.ctx.currentTime); // СИЛЬНО ТИШЕ
-                g.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 3);
+                this.init(); this.stopHeartbeat();
+                const osc = this.ctx.createOscillator(); const g = this.ctx.createGain();
+                osc.type = 'sine'; osc.frequency.setValueAtTime(80, this.ctx.currentTime);
+                osc.frequency.linearRampToValueAtTime(1, this.ctx.currentTime + 4);
+                g.gain.setValueAtTime(0.08, this.ctx.currentTime);
+                g.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 4);
                 osc.connect(g); g.connect(this.masterGain);
-                osc.start(); osc.stop(this.ctx.currentTime + 3);
+                osc.start(); osc.stop(this.ctx.currentTime + 4);
             }
         };
 
@@ -205,13 +194,17 @@
         const db = firebase.database();
 
         let gId = "", pNum = 0, gState = null, lang = 'ru', isBotMode = false;
+        let sessionWords = [];
 
         const TEXTS = {
             ru: { single: "ОДИНОЧНЫЙ СЕАНС", create:"СОЗДАТЬ ЛОББИ", join:"ПОДКЛЮЧИТЬСЯ", start:"ВОЙТИ", back:"НАЗАД", roll:"КУРОК", wait:"ОЖИДАНИЕ СУБЪЕКТА...", your:"ТВОЙ ХОД", enemy:"ВРАГ ЦЕЛИТСЯ...", botTurn: "ТЕРМИНАЛ ДУМАЕТ...", winT:"ВЫЖИЛ", winM:"Система стабильна.", loseT:"СТЕРТ", loseM:"Утилизация завершена.", instr: "1. Жми КУРОК.<br>2. Цифра — колонка.<br>3. 6 — любая клетка." },
             en: { single: "SINGLE SESSION", create:"CREATE LOBBY", join:"CONNECT", start:"ENTER", back:"BACK", roll:"TRIGGER", wait:"AWAITING...", your:"YOUR TURN", enemy:"ENEMY AIMING...", botTurn: "TERMINAL THINKING...", winT:"STABLE", winM:"Subject stable.", loseT:"ERASED", loseM:"Disposal complete.", instr: "1. Pull TRIGGER.<br>2. Num is column.<br>3. 6 is free choice." }
         };
 
-        const WORDS = ["БОЛЬ", "УЖАС", "ТЛЕН", "МОРГ", "ЯД", "БРЕД", "АГОНИЯ", "МРАК", "СТРАХ", "ПЫТКИ", "КРОВЬ", "КРИК", "ТЬМА", "ХАОС", "ГНИЛЬ", "СМЕРТЬ", "ПУСТОТА", "БЕЗДНА", "ШРАМ", "ГРЕХ", "ПЕТЛЯ", "ЗЛО", "РОК", "ГРОБ", "ТЕНЬ"];
+        function generateSessionWords() {
+            let shuffled = [...MASTER_WORDS].sort(() => 0.5 - Math.random());
+            return shuffled.slice(0, 25);
+        }
 
         function toggleLanguage() {
             TerminalAudio.playClick();
@@ -230,10 +223,11 @@
         function startSinglePlayer() {
             TerminalAudio.playClick();
             isBotMode = true; pNum = 1; gId = "LOCAL_BOT";
-            gState = { board: Array(25).fill(0), turn: 1, roll: 0, players: 2, winner: 0 };
+            sessionWords = generateSessionWords();
+            gState = { board: Array(25).fill(0), turn: 1, roll: 0, players: 2, winner: 0, words: sessionWords };
             gState.board[12] = 3;
             switchScreen('scrGame');
-            document.getElementById('displayId').innerText = "MODE: AI_CHALLENGE";
+            document.getElementById('displayId').innerText = "MODE: SYSTEM_FAILURE";
             TerminalAudio.startHeartbeat();
             drawGrid(); updateUI();
         }
@@ -243,12 +237,10 @@
             isBotMode = false;
             gId = Math.random().toString(36).substring(2, 7).toUpperCase();
             pNum = 1;
-            const data = { board: Array(25).fill(0), turn: 1, roll: 0, players: 1, winner: 0 };
+            sessionWords = generateSessionWords();
+            const data = { board: Array(25).fill(0), turn: 1, roll: 0, players: 1, winner: 0, words: sessionWords };
             data.board[12] = 3;
-            db.ref('games/' + gId).set(data).then(() => {
-                listen();
-                TerminalAudio.startHeartbeat();
-            });
+            db.ref('games/' + gId).set(data).then(() => { listen(); TerminalAudio.startHeartbeat(); });
         }
 
         function startJoin() {
@@ -260,8 +252,7 @@
             db.ref('games/' + gId).once('value', s => {
                 if(s.exists()){
                     db.ref('games/' + gId).update({ players: 2 });
-                    listen();
-                    TerminalAudio.startHeartbeat();
+                    listen(); TerminalAudio.startHeartbeat();
                 } else { TerminalAudio.playDeath(); }
             });
         }
@@ -272,6 +263,7 @@
             db.ref('games/' + gId).on('value', s => {
                 gState = s.val();
                 if(!gState) return;
+                sessionWords = gState.words; // Синхронизируем слова
                 drawGrid(); updateUI();
                 if(gState.winner) showEnd(gState.winner === pNum);
             });
@@ -340,12 +332,12 @@
 
         function drawGrid() {
             const g = document.getElementById('mainGrid');
-            if(!g) return;
+            if(!g || !sessionWords) return;
             g.innerHTML = '';
             gState.board.forEach((v, i) => {
                 const cell = document.createElement('div');
                 cell.className = 'cell' + (v===1?' p1':v===2?' p2':v===3?' free':'');
-                cell.innerText = v === 3 ? "VOID" : WORDS[i];
+                cell.innerText = v === 3 ? "SYSTEM" : (sessionWords[i] || "---");
                 cell.onclick = () => occupy(i);
                 g.appendChild(cell);
             });
