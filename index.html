@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>VOID TERMINAL | SOUND PROTOCOL</title>
+    <title>VOID TERMINAL | AMBIENT PROTOCOL</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
@@ -82,12 +82,40 @@
     </div>
 
     <script>
-        // --- ЗВУКОВОЙ ДВИЖОК ---
         const TerminalAudio = {
             ctx: null,
+            ambientStarted: false,
             init() {
                 if (this.ctx) return;
                 this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                this.startAmbient();
+            },
+            startAmbient() {
+                if (this.ambientStarted) return;
+                this.ambientStarted = true;
+                
+                const masterGain = this.ctx.createGain();
+                masterGain.gain.setValueAtTime(0, this.ctx.currentTime);
+                masterGain.gain.linearRampToValueAtTime(0.08, this.ctx.currentTime + 3); // Плавное появление
+                
+                const createLayer = (freq, type, detune) => {
+                    const osc = this.ctx.createOscillator();
+                    const filter = this.ctx.createBiquadFilter();
+                    osc.type = type;
+                    osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                    osc.detune.setValueAtTime(detune, this.ctx.currentTime);
+                    filter.type = 'lowpass';
+                    filter.frequency.setValueAtTime(150, this.ctx.currentTime);
+                    osc.connect(filter);
+                    filter.connect(masterGain);
+                    osc.start();
+                };
+
+                createLayer(40, 'sine', 0);   // Глубокий низ
+                createLayer(42, 'sine', 5);   // Биение частот
+                createLayer(60, 'sawtooth', -10); // Металлический оттенок
+                
+                masterGain.connect(this.ctx.destination);
             },
             playClick() {
                 this.init();
@@ -96,7 +124,7 @@
                 osc.type = 'square';
                 osc.frequency.setValueAtTime(150, this.ctx.currentTime);
                 osc.frequency.exponentialRampToValueAtTime(10, this.ctx.currentTime + 0.1);
-                gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+                gain.gain.setValueAtTime(0.05, this.ctx.currentTime);
                 gain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.1);
                 osc.connect(gain); gain.connect(this.ctx.destination);
                 osc.start(); osc.stop(this.ctx.currentTime + 0.1);
@@ -110,7 +138,7 @@
                 const noise = this.ctx.createBufferSource();
                 noise.buffer = buffer;
                 const gain = this.ctx.createGain();
-                gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+                gain.gain.setValueAtTime(0.05, this.ctx.currentTime);
                 gain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.3);
                 noise.connect(gain); gain.connect(this.ctx.destination);
                 noise.start();
@@ -120,11 +148,11 @@
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
                 osc.frequency.setValueAtTime(100, this.ctx.currentTime);
-                osc.frequency.linearRampToValueAtTime(20, this.ctx.currentTime + 1.5);
+                osc.frequency.linearRampToValueAtTime(20, this.ctx.currentTime + 2);
                 gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
-                gain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 1.5);
+                gain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 2);
                 osc.connect(gain); gain.connect(this.ctx.destination);
-                osc.start(); osc.stop(this.ctx.currentTime + 1.5);
+                osc.start(); osc.stop(this.ctx.currentTime + 2);
             }
         };
 
