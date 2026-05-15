@@ -88,6 +88,10 @@
                 <hr style="border:0; border-top:1px solid #311; margin: 10px 0;">
                 <b id="tProt" style="color:var(--blood)">ПРОТОКОЛ:</b>
                 <div id="tInstr" style="color:#888; margin-top:8px; line-height:1.6; font-size:11px;"></div>
+                <div id="tWarn" style="margin-top:14px; padding:10px; border:1px dashed #400; background:#0a0000; font-size:10px; line-height:1.7; color:#553333;">
+                    <span style="color:var(--blood); letter-spacing:2px;">&#x26A0; <span id="tWarnLabel"></span> &#x26A0;</span><br>
+                    <span id="tWarnText"></span>
+                </div>
             </div>
             <div style="display:flex; flex-direction:column; align-items:center;">
                 <div id="gameStatus" style="color: #f00; margin-bottom: 10px; font-family:'Special Elite'; height: 20px;"></div>
@@ -117,7 +121,7 @@
                 this.ctx = new (window.AudioContext || window.webkitAudioContext)(); 
                 this.masterGain = this.ctx.createGain(); 
                 this.masterGain.connect(this.ctx.destination); 
-                this.masterGain.gain.value = 0.25;
+                this.masterGain.gain.value = 0.15;
                 this.startAmbient();
             },
             
@@ -129,7 +133,7 @@
                 const filter = this.ctx.createBiquadFilter();
                 drone.type = 'sawtooth'; drone.frequency.value = 43.65;
                 filter.type = 'lowpass'; filter.frequency.value = 60;
-                dGain.gain.value = 0.12;
+                dGain.gain.value = 0.07;
                 drone.connect(filter); filter.connect(dGain); dGain.connect(this.masterGain);
                 drone.start();
                 this.playHeart();
@@ -145,7 +149,7 @@
                     osc.frequency.setValueAtTime(i === 0 ? 55 : 48, now + delay);
                     osc.frequency.exponentialRampToValueAtTime(0.01, now + delay + 0.4);
                     g.gain.setValueAtTime(0, now + delay);
-                    g.gain.linearRampToValueAtTime(i === 0 ? 0.55 : 0.38, now + delay + 0.05);
+                    g.gain.linearRampToValueAtTime(i === 0 ? 0.75 : 0.55, now + delay + 0.05);
                     g.gain.exponentialRampToValueAtTime(0.001, now + delay + 0.4);
                     osc.connect(g); g.connect(this.masterGain);
                     osc.start(now + delay); osc.stop(now + delay + 0.5);
@@ -171,7 +175,7 @@
                 noiseFilter.Q.value = 0.4;
 
                 const noiseGain = this.ctx.createGain();
-                noiseGain.gain.value = 0.04;
+                noiseGain.gain.value = 0.02;
 
                 noiseSource.connect(noiseFilter);
                 noiseFilter.connect(noiseGain);
@@ -193,7 +197,7 @@
                 const shimmerGain = this.ctx.createGain();
                 shimmerOsc.type = 'sine';
                 shimmerOsc.frequency.value = 2847;
-                shimmerGain.gain.value = 0.018;
+                shimmerGain.gain.value = 0.008;
 
                 const lfoShimmer = this.ctx.createOscillator();
                 const lfoShimmerGain = this.ctx.createGain();
@@ -222,8 +226,8 @@
                     osc.type = 'sine';
                     osc.frequency.value = 440 + Math.random() * 320;
                     g.gain.setValueAtTime(0, now);
-                    g.gain.linearRampToValueAtTime(0.035, now + 0.08);
-                    g.gain.setValueAtTime(0.035, now + 0.18);
+                    g.gain.linearRampToValueAtTime(0.018, now + 0.08);
+                    g.gain.setValueAtTime(0.018, now + 0.18);
                     g.gain.linearRampToValueAtTime(0, now + 0.35);
                     osc.connect(g);
                     g.connect(this.masterGain);
@@ -285,17 +289,25 @@
 
         let gId = "", pNum = 1, gState = null, lang = 'ru', isBotMode = false, sessionWords = [], myNick = localStorage.getItem('void_nick') || "";
         const TEXTS = {
-            ru: { protocol: "ПРОТОКОЛ:", list: "СПИСОК ЛОББИ", single: "ОДИНОЧНЫЙ СЕАНС", create:"СОЗДАТЬ ЛОББИ", join:"ПОДКЛЮЧИТЬСЯ", start:"ВОЙТИ", back:"НАЗАД", roll:"КУРОК", your:"ТВОЙ ХОД", enemy:"ВРАГ ЦЕЛИТСЯ...", botTurn: "ТЕРМИНАЛ ДУМАЕТ...", winT:"ВЫЖИЛ", winM:"Система стабильна.", loseT:"СТЕРТ", loseM:"Утилизация завершена.", instr: "1. Нажми КУРОК для выбора колонки.<br>2. Выбери клетку в подсвеченной колонке.<br>3. Число 6 — свободный выбор любой клетки.<br>4. Собери линию из 5 слов для победы.", system: "СИСТЕМА" },
-            en: { protocol: "PROTOCOL:", list: "LOBBY LIST", single: "SINGLE SESSION", create:"CREATE LOBBY", join:"CONNECT", start:"ENTER", back:"BACK", roll:"TRIGGER", your:"YOUR TURN", enemy:"ENEMY AIMING...", botTurn: "TERMINAL THINKING...", winT:"STABLE", winM:"Subject stable.", loseT:"ERASED", loseM:"Disposal complete.", instr: "1. Pull TRIGGER to roll a column.<br>2. Pick a cell in the highlighted column.<br>3. Roll 6 for a free choice anywhere.<br>4. Form a line of 5 words to win.", system: "SYSTEM" }
+            ru: { protocol: "ПРОТОКОЛ:", list: "СПИСОК ЛОББИ", single: "ОДИНОЧНЫЙ СЕАНС", create:"СОЗДАТЬ ЛОББИ", join:"ПОДКЛЮЧИТЬСЯ", start:"ВОЙТИ", back:"НАЗАД", roll:"КУРОК", your:"ТВОЙ ХОД", enemy:"ВРАГ ЦЕЛИТСЯ...", botTurn: "ТЕРМИНАЛ ДУМАЕТ...", winT:"ВЫЖИЛ", winM:"Система стабильна.", loseT:"СТЕРТ", loseM:"Утилизация завершена.", instr: "I. Нажми КУРОК — система назначит колонку.<br>II. Выбери клетку в подсвеченной колонке.<br>III. Выпало 6 — захвати любую клетку.<br>IV. Собери линию из 5 слов подряд.<br>V. Проигравший стирается из реестра.", warnLabel: "ПРЕДУПРЕЖДЕНИЕ СИСТЕМЫ", warn: "Участие в сеансе фиксируется. Личность субъекта сохраняется в архиве до полного разложения данных. Попытка выхода расценивается как отказ от протокола. Отказ карается утилизацией.", system: "СИСТЕМА" },
+            en: { protocol: "PROTOCOL:", list: "LOBBY LIST", single: "SINGLE SESSION", create:"CREATE LOBBY", join:"CONNECT", start:"ENTER", back:"BACK", roll:"TRIGGER", your:"YOUR TURN", enemy:"ENEMY AIMING...", botTurn: "TERMINAL THINKING...", winT:"STABLE", winM:"Subject stable.", loseT:"ERASED", loseM:"Disposal complete.", instr: "I. Pull TRIGGER — system assigns a column.<br>II. Select a cell in the highlighted column.<br>III. Roll 6 — claim any cell freely.<br>IV. Form a line of 5 words in a row.<br>V. The loser is purged from the registry.", warnLabel: "SYSTEM WARNING", warn: "Participation in this session is logged. Subject identity is retained in the archive until full data decomposition. Attempting to exit is treated as protocol refusal. Refusal is punishable by disposal.", system: "SYSTEM" }
         };
 
         function switchScreen(s) { document.querySelectorAll('.screen').forEach(el => el.classList.remove('active')); document.getElementById(s).classList.add('active'); }
+
+        function renderInstructions() {
+            document.getElementById('tProt').innerText = TEXTS[lang].protocol;
+            document.getElementById('tInstr').innerHTML = TEXTS[lang].instr;
+            document.getElementById('tWarnLabel').innerText = TEXTS[lang].warnLabel;
+            document.getElementById('tWarnText').innerText = TEXTS[lang].warn;
+        }
         
         function toggleLanguage() { 
             lang = lang === 'ru' ? 'en' : 'ru'; 
             document.querySelectorAll('[data-t]').forEach(el => el.innerHTML = TEXTS[lang][el.getAttribute('data-t')] || el.innerText); 
             document.getElementById('tProt').innerText = TEXTS[lang].protocol;
             document.getElementById('tInstr').innerHTML = TEXTS[lang].instr; 
+            renderInstructions();
             if(gState) { drawGrid(); updateUI(); }
         }
 
@@ -336,8 +348,8 @@
             sessionWords = [...sourceWords].sort(() => 0.5 - Math.random()).slice(0, 25);
             gState = { board: Array(25).fill(0), turn: 1, roll: 0, players: 2, winner: 0, words: sessionWords, p1Nick: "YOU", p2Nick: "BOT" };
             gState.board[12] = 3; 
-            switchScreen('scrGame'); document.getElementById('copyBtn').style.display = 'none'; 
-            drawGrid(); updateUI();
+            switchScreen('scrGame'); document.getElementById('copyBtn').style.display = 'none';
+            renderInstructions(); drawGrid(); updateUI();
         }
 
         function startHost() {
@@ -358,7 +370,7 @@
         }
 
         function listen() {
-            switchScreen('scrGame'); document.getElementById('displayId').innerText = "SESSION: " + gId;
+            switchScreen('scrGame'); renderInstructions(); document.getElementById('displayId').innerText = "SESSION: " + gId;
             db.ref('games/' + gId).on('value', s => {
                 gState = s.val(); if(!gState) return; sessionWords = gState.words; 
                 document.getElementById('displayOpponent').innerText = pNum === 1 ? (gState.p2Nick || "WAITING...") : gState.p1Nick;
@@ -390,8 +402,9 @@
             if(isBotMode) { 
                 const count = gState.board.filter(v => v !== 0).length;
                 TerminalAudio.updatePulse(count);
-                drawGrid(); updateUI(); 
-                if(!gState.winner && gState.turn === 2) setTimeout(botMove, 600); 
+                drawGrid(); updateUI();
+                if(gState.winner) { showEnd(gState.winner === pNum); return; }
+                if(gState.turn === 2) setTimeout(botMove, 600); 
             } else { db.ref('games/' + gId).update(gState); }
         }
 
@@ -413,11 +426,15 @@
             if(checkWin(gState.board)) gState.winner = 2;
             else { gState.turn = 1; gState.roll = 0; }
             drawGrid(); updateUI();
+            if(gState.winner) showEnd(gState.winner === pNum);
         }
 
         function checkWin(b) {
             const wins = [[0,1,2,3,4],[5,6,7,8,9],[10,11,12,13,14],[15,16,17,18,19],[20,21,22,23,24], [0,5,10,15,20],[1,6,11,16,21],[2,7,12,17,22],[3,8,13,18,23],[4,9,14,19,24], [0,6,12,18,24],[4,8,12,16,20]];
-            return wins.some(w => w.every(idx => b[idx] !== 0));
+            return wins.some(w => {
+                const vals = w.map(idx => b[idx]);
+                return (vals.every(v => v === 1) || vals.every(v => v === 2));
+            });
         }
 
         function drawGrid() {
