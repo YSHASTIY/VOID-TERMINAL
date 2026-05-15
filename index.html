@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>VOID TERMINAL | FINAL</title>
-    <link rel="icon" type="image/png" href="favicon.png">
+    <title>VOID TERMINAL | ULTIMATE</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
@@ -13,6 +12,7 @@
         * { box-sizing: border-box; cursor: crosshair; user-select: none; -webkit-tap-highlight-color: transparent; }
         body, html { margin: 0; padding: 0; background: var(--dark); color: #b0a090; font-family: 'Share Tech Mono', monospace; height: 100%; overflow: hidden; }
         
+        /* CRT & FX */
         .crt-overlay { position: fixed; inset: 0; pointer-events: none; z-index: 1000; background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), radial-gradient(circle, transparent 40%, black 150%); background-size: 100% 4px, 100% 100%; }
         .scanline { position: fixed; top: 0; width: 100%; height: 100px; background: linear-gradient(0deg, transparent, rgba(138, 3, 3, 0.1), transparent); animation: moveScan 8s linear infinite; pointer-events: none; z-index: 1001; }
         @keyframes moveScan { from { top: -100px; } to { top: 100%; } }
@@ -30,7 +30,7 @@
         .cell { background: #080000; border: 1px solid #222; display: flex; align-items: center; justify-content: center; text-align: center; font-size: clamp(6px, 1.8vw, 9px); color: #444; aspect-ratio: 1/1; overflow: hidden; padding: 2px; text-transform: uppercase; transition: 0.3s; }
         .cell.p1 { background: var(--blood); color: #fff; border-color: #f00; box-shadow: inset 0 0 10px #000; }
         .cell.p2 { background: #004; color: #fff; border-color: var(--neon); box-shadow: inset 0 0 10px #000; }
-        .cell.system { color: var(--blood); border: 1px dashed var(--blood); font-weight: bold; opacity: 0.6; }
+        .cell.system { color: var(--blood); border: 1px dashed var(--blood); font-weight: bold; opacity: 0.8; background: #1a0000; }
         
         .panel { background: var(--panel); border: 1px solid #400; padding: 15px; width: 280px; font-size: 13px; border-left: 4px solid var(--blood); }
         #rollVal { width: 60px; height: 60px; border: 2px solid var(--blood); display: flex; align-items: center; justify-content: center; font-family: 'Bebas Neue'; font-size: 32px; color: #f00; background: #000; }
@@ -108,16 +108,89 @@
     </div>
 
     <script>
+        // Списки слов
         const MASTER_WORDS_RU = ["Гниль", "Трепанация", "Метастаз", "Некроз", "Судороги", "Асфиксия", "Распад", "Паразит", "Инъекция", "Токсин", "Гангрена", "Плесень", "Опухоль", "Личинка", "Пытка", "Ампутация", "Рвота", "Шрам", "Гной", "Труп", "Кома", "Фантом", "Перелом", "Вирус", "Спазм", "Безумие", "Кадавр", "Слизь", "Мутация", "Агония", "Слепота", "Удушье", "Сепсис", "Амнезия", "Психоз", "Фобия", "Каннибал", "Морг", "Петля", "Бездна", "Пустота", "Эрозия", "Травма", "Шизофрения", "Паралич", "Невроз", "Кошмар", "Паника", "Тремор", "Обморок", "Заражение", "Тлен", "Ожог", "Галлюцинация", "Стигматы", "Ритуал", "Жертва", "Алтарь", "Проклятие", "Демон", "Мрак", "Тень", "Одержимость", "Шепот", "Скрежет", "Вопль", "Смерть", "Погребение", "Могила", "Склеп", "Саван", "Пепел", "Ужас", "Страх", "Боль", "Отчаяние", "Гнев", "Порок", "Грех", "Вина", "Палач", "Тиски", "Игла", "Скальпель", "Пила", "Крюк", "Цепь", "Клетка", "Подвал", "Чердак", "Лабиринт", "Зеркало", "Маска", "Лицо", "Глаза", "Зубы", "Когти", "Кость", "Кровь", "Плоть", "Кожа", "Волосы", "Нерв", "Мозг", "Сердце", "Легкие", "Почка", "Печень", "Желудок", "Кишечник", "Язва", "Нарыв", "Свищ", "Грыжа", "Отек", "Тромб", "Инфаркт", "Инсульт", "Рак", "Диагноз", "Рецидив", "Клиника", "Палата", "Изолятор", "Смирительная", "Лоботомия", "Электрошок", "Препарат", "Доза", "Яд", "Ртуть", "Кислота", "Щелочь", "Радиация", "Изотоп", "Мутант", "Гибрид", "Клон", "Орган", "Донор", "Трансплантат", "Имплант", "Протез", "Сенсор", "Чип", "Провод", "Ток", "Разряд", "Импульс", "Сигнал", "Шум", "Помеха", "Глюк", "Ошибка", "Сбой", "Отказ", "Крах", "Коллапс", "Взрыв", "Пламя", "Дым", "Газ", "Пыль", "Грязь", "Мусор", "Отходы", "Стоки", "Канализация", "Крыса", "Насекомое", "Паук", "Клещ", "Червь", "Пиявка", "Оса", "Рой", "Улей", "Гнездо", "Нора", "Ловушка", "Капкан", "Петля", "Узел", "Верёвка", "Нож", "Бритва", "Шило", "Топор", "Молот", "Гвоздь"];
         const MASTER_WORDS_EN = ["Rot", "Trepanation", "Metastasis", "Necrosis", "Seizure", "Asphyxia", "Decay", "Parasite", "Injection", "Toxin", "Gangrene", "Mold", "Tumor", "Larva", "Torture", "Amputation", "Vomit", "Scar", "Pus", "Corpse", "Coma", "Phantom", "Fracture", "Virus", "Spasm", "Madness", "Cadaver", "Slime", "Mutation", "Agony", "Blindness", "Suffocation", "Sepsis", "Amnesia", "Psychosis", "Phobia", "Cannibal", "Morgue", "Noose", "Abyss", "Void", "Erosion", "Trauma", "Schizophrenia", "Paralysis", "Neurosis", "Nightmare", "Panic", "Tremor", "Fainting", "Infection", "Blight", "Burn", "Hallucination", "Stigmata", "Ritual", "Sacrifice", "Altar", "Curse", "Demon", "Gloom", "Shadow", "Possession", "Whisper", "Grind", "Scream", "Death", "Burial", "Grave", "Crypt", "Shroud", "Ash", "Horror", "Fear", "Pain", "Despair", "Wrath", "Vice", "Sin", "Guilt", "Hangman", "Vise", "Needle", "Scalpel", "Saw", "Hook", "Chain", "Cage", "Cellar", "Attic", "Maze", "Mirror", "Mask", "Face", "Eyes", "Teeth", "Claws", "Bone", "Blood", "Flesh", "Skin", "Hair", "Nerve", "Brain", "Heart", "Lungs", "Kidney", "Liver", "Stomach", "Intestine", "Ulcer", "Abscess", "Fistula", "Hernia", "Edema", "Thrombus", "Infarction", "Stroke", "Cancer", "Diagnosis", "Relapse", "Clinic", "Ward", "Isolator", "Straitjacket", "Lobotomy", "Electroshock", "Drug", "Dose", "Poison", "Mercury", "Acid", "Alkali", "Radiation", "Isotope", "Mutant", "Hybrid", "Clone", "Organ", "Donor", "Transplant", "Implant", "Prosthesis", "Sensor", "Chip", "Wire", "Current", "Discharge", "Impulse", "Signal", "Noise", "Glitch", "Error", "Fault", "Crash", "Collapse", "Explosion", "Flame", "Smoke", "Gas", "Dust", "Dirt", "Waste", "Sewage", "Rat", "Insect", "Spider", "Tick", "Worm", "Leech", "Wasp", "Swarm", "Hive", "Nest", "Burrow", "Trap", "Snare", "Knot", "Rope", "Knife", "Razor", "Awl", "Axe", "Hammer", "Nail"];
 
         const TerminalAudio = {
-            ctx: null, masterGain: null,
-            init() { if (this.ctx) return; this.ctx = new (window.AudioContext || window.webkitAudioContext)(); this.masterGain = this.ctx.createGain(); this.masterGain.connect(this.ctx.destination); },
-            playDataBurst() { if(!this.ctx) return; const o = this.ctx.createOscillator(); const g = this.ctx.createGain(); o.type = 'sawtooth'; o.frequency.value = 1000; g.gain.setValueAtTime(0.01, this.ctx.currentTime); g.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.05); o.connect(g); g.connect(this.masterGain); o.start(); o.stop(this.ctx.currentTime + 0.05); },
-            playStatic() { if(!this.ctx) return; const o = this.ctx.createOscillator(); const g = this.ctx.createGain(); o.type = 'square'; o.frequency.value = 100; g.gain.setValueAtTime(0.02, this.ctx.currentTime); g.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.2); o.connect(g); g.connect(this.masterGain); o.start(); o.stop(this.ctx.currentTime + 0.2); }
+            ctx: null, masterGain: null, ambientStarted: false,
+            init() { 
+                if (this.ctx) return; 
+                this.ctx = new (window.AudioContext || window.webkitAudioContext)(); 
+                this.masterGain = this.ctx.createGain(); 
+                this.masterGain.connect(this.ctx.destination); 
+                this.masterGain.gain.value = 0.5;
+                this.startAmbient();
+            },
+            
+            startAmbient() {
+                if (this.ambientStarted) return;
+                this.ambientStarted = true;
+
+                // Deep Drone (Гул)
+                const drone = this.ctx.createOscillator();
+                const dGain = this.ctx.createGain();
+                const filter = this.ctx.createBiquadFilter();
+                drone.type = 'sawtooth'; drone.frequency.value = 43.65;
+                filter.type = 'lowpass'; filter.frequency.value = 80;
+                dGain.gain.value = 0.08;
+                drone.connect(filter); filter.connect(dGain); dGain.connect(this.masterGain);
+                drone.start();
+
+                // Brown Noise (Шум)
+                const bufferSize = 2 * this.ctx.sampleRate;
+                const noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                const output = noiseBuffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) output[i] = Math.random() * 2 - 1;
+                const noise = this.ctx.createBufferSource();
+                noise.buffer = noiseBuffer; noise.loop = true;
+                const nGain = this.ctx.createGain();
+                const nFilter = this.ctx.createBiquadFilter();
+                nFilter.type = 'lowpass'; nFilter.frequency.value = 120;
+                nGain.gain.value = 0.03;
+                noise.connect(nFilter); nFilter.connect(nGain); nGain.connect(this.masterGain);
+                noise.start();
+
+                // Heartbeat (Пульс)
+                const playHeartbeat = () => {
+                    const now = this.ctx.currentTime;
+                    [0, 0.4].forEach(delay => {
+                        const osc = this.ctx.createOscillator();
+                        const g = this.ctx.createGain();
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(55, now + delay);
+                        osc.frequency.exponentialRampToValueAtTime(0.01, now + delay + 0.5);
+                        g.gain.setValueAtTime(0, now + delay);
+                        g.gain.linearRampToValueAtTime(0.12, now + delay + 0.05);
+                        g.gain.exponentialRampToValueAtTime(0.001, now + delay + 0.4);
+                        osc.connect(g); g.connect(this.masterGain);
+                        osc.start(now + delay); osc.stop(now + delay + 0.5);
+                    });
+                    setTimeout(playHeartbeat, 1700 + Math.random() * 500);
+                };
+                playHeartbeat();
+            },
+
+            playDataBurst() { 
+                if(!this.ctx) return; 
+                const o = this.ctx.createOscillator(); const g = this.ctx.createGain(); 
+                o.type = 'sawtooth'; o.frequency.value = 800; 
+                g.gain.setValueAtTime(0.01, this.ctx.currentTime); 
+                g.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.05); 
+                o.connect(g); g.connect(this.masterGain); o.start(); o.stop(this.ctx.currentTime + 0.05); 
+            },
+
+            playStatic() { 
+                if(!this.ctx) return; 
+                const o = this.ctx.createOscillator(); const g = this.ctx.createGain(); 
+                o.type = 'square'; o.frequency.value = 60; 
+                g.gain.setValueAtTime(0.05, this.ctx.currentTime); 
+                g.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.3); 
+                o.connect(g); g.connect(this.masterGain); o.start(); o.stop(this.ctx.currentTime + 0.3); 
+            }
         };
 
+        // Firebase & Logic
         const firebaseConfig = { apiKey: "AIzaSyCE7WDfmIi5sMGpZpfLSi5vjpL7Mn2aLtA", authDomain: "fidelity-18c8a.firebaseapp.com", databaseURL: "https://fidelity-18c8a-default-rtdb.europe-west1.firebasedatabase.app", projectId: "fidelity-18c8a" };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
@@ -159,7 +232,7 @@
             db.ref('games').once('value', s => {
                 listEl.innerHTML = ''; const games = s.val(); let found = false;
                 for (let id in games) {
-                    if (games[id].players === 1 && !games[id].winner) {
+                    if (games[id] && games[id].players === 1 && !games[id].winner) {
                         found = true;
                         const item = document.createElement('div');
                         item.className = 'lobby-item';
@@ -178,7 +251,7 @@
             const sourceWords = lang === 'ru' ? MASTER_WORDS_RU : MASTER_WORDS_EN;
             sessionWords = [...sourceWords].sort(() => 0.5 - Math.random()).slice(0, 25);
             gState = { board: Array(25).fill(0), turn: 1, roll: 0, players: 2, winner: 0, words: sessionWords, p1Nick: "YOU", p2Nick: "BOT" };
-            gState.board[12] = 3; // ЦЕНТРАЛЬНАЯ ЯЧЕЙКА ЗАНЯТА
+            gState.board[12] = 3; 
             switchScreen('scrGame'); document.getElementById('copyBtn').style.display = 'none'; 
             drawGrid(); updateUI();
         }
@@ -188,7 +261,7 @@
             const sourceWords = lang === 'ru' ? MASTER_WORDS_RU : MASTER_WORDS_EN;
             sessionWords = [...sourceWords].sort(() => 0.5 - Math.random()).slice(0, 25);
             const data = { board: Array(25).fill(0), turn: 1, roll: 0, players: 1, winner: 0, words: sessionWords, p1Nick: myNick, p2Nick: "" };
-            data.board[12] = 3; // ЦЕНТРАЛЬНАЯ ЯЧЕЙКА ЗАНЯТА
+            data.board[12] = 3; 
             db.ref('games/' + gId).set(data).then(() => { listen(); });
             document.getElementById('copyBtn').style.display = 'block';
         }
@@ -198,7 +271,6 @@
             db.ref('games/' + gId).once('value', s => { 
                 if(s.exists()){ db.ref('games/' + gId).update({ players: 2, p2Nick: myNick }); listen(); } 
             });
-            document.getElementById('copyBtn').style.display = 'block';
         }
 
         function listen() {
@@ -215,64 +287,40 @@
             TerminalAudio.playStatic();
             const r = Math.floor(Math.random() * 6) + 1;
             if(isBotMode) { 
-                gState.roll = r; 
-                updateUI(); 
-                drawGrid();
+                gState.roll = r; updateUI(); drawGrid();
                 if(gState.turn === 2) setTimeout(botDecision, 800); 
-            } else { 
-                db.ref('games/' + gId).update({ roll: r }); 
-            }
+            } else { db.ref('games/' + gId).update({ roll: r }); }
         }
 
         function occupy(i) {
             if(gState.turn !== pNum || !gState.roll || gState.board[i] !== 0) return;
             if(gState.roll !== 6 && (i % 5) !== (gState.roll - 1)) return;
-            
             TerminalAudio.playDataBurst();
             gState.board[i] = pNum;
             gState.roll = 0;
-            
-            if(checkWin(gState.board)) {
-                gState.winner = pNum;
-            } else {
-                gState.turn = isBotMode ? 2 : (pNum === 1 ? 2 : 1);
-            }
-
-            if(isBotMode) {
-                drawGrid(); updateUI();
-                if(!gState.winner && gState.turn === 2) setTimeout(botMove, 600);
-            } else {
-                db.ref('games/' + gId).update(gState);
-            }
+            if(checkWin(gState.board)) gState.winner = pNum;
+            else gState.turn = isBotMode ? 2 : (pNum === 1 ? 2 : 1);
+            if(isBotMode) { drawGrid(); updateUI(); if(!gState.winner && gState.turn === 2) setTimeout(botMove, 600); }
+            else { db.ref('games/' + gId).update(gState); }
         }
 
-        function botMove() {
-            if(!isBotMode || gState.winner || gState.turn !== 2) return;
-            triggerRoll();
-        }
+        function botMove() { if(!isBotMode || gState.winner || gState.turn !== 2) return; triggerRoll(); }
 
         function botDecision() {
             let moves = [];
-            gState.board.forEach((v, idx) => {
-                if(v === 0 && (gState.roll === 6 || (idx % 5 === gState.roll - 1))) moves.push(idx);
-            });
-
+            gState.board.forEach((v, idx) => { if(v === 0 && (gState.roll === 6 || (idx % 5 === gState.roll - 1))) moves.push(idx); });
             if(moves.length > 0) {
-                let best = moves[0];
-                let maxS = -1;
+                let best = moves[0]; let maxS = -1;
                 moves.forEach(m => {
                     let s = 0;
                     let bW = [...gState.board]; bW[m] = 2; if(checkWin(bW)) s += 100;
                     let bB = [...gState.board]; bB[m] = 1; if(checkWin(bB)) s += 50;
                     if(s > maxS) { maxS = s; best = m; }
                 });
-                gState.board[best] = 2;
-                TerminalAudio.playDataBurst();
+                gState.board[best] = 2; TerminalAudio.playDataBurst();
             }
-
             if(checkWin(gState.board)) gState.winner = 2;
             else { gState.turn = 1; gState.roll = 0; }
-            
             drawGrid(); updateUI();
         }
 
@@ -288,8 +336,7 @@
                 cell.className = 'cell' + (v===1?' p1':v===2?' p2':v===3?' system':'');
                 if (gState.turn === pNum && gState.roll !== 0 && v === 0) {
                     if (gState.roll === 6 || (i % 5 === gState.roll - 1)) {
-                        cell.style.borderColor = '#fff';
-                        cell.style.boxShadow = 'inset 0 0 8px rgba(255,255,255,0.3)';
+                        cell.style.borderColor = '#fff'; cell.style.boxShadow = 'inset 0 0 8px rgba(255,255,255,0.3)';
                     }
                 }
                 cell.innerText = v === 3 ? TEXTS[lang].system : sessionWords[i];
@@ -313,7 +360,6 @@
             switchScreen('endScreen'); document.getElementById('endScreen').style.display = 'flex';
         }
 
-        // Init Instructions
         document.getElementById('tInstr').innerHTML = TEXTS[lang].instr;
         document.getElementById('tProt').innerText = TEXTS[lang].protocol;
     </script>
