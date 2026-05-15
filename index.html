@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>VOID TERMINAL</title>
+    <title>VOID TERMINAL | AUTOPSY PROTOCOL</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
@@ -28,6 +28,8 @@
         .panel { background: var(--panel); border: 1px solid #400; padding: 20px; width: 280px; font-size: 13px; border-left: 4px solid var(--blood); }
         #rollVal { width: 65px; height: 65px; border: 2px solid var(--blood); display: flex; align-items: center; justify-content: center; font-family: 'Bebas Neue'; font-size: 36px; color: #f00; background: #000; }
         #endScreen { position: fixed; inset: 0; background: #000; z-index: 5000; display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+        .diag-box { font-family: 'Special Elite'; font-size: 16px; color: #aaa; max-width: 600px; width: 90%; margin-top: 30px; line-height: 1.6; border: 1px solid #300; padding: 20px; background: #0a0000; text-align: left; position: relative; }
+        .diag-box::before { content: "AUTOPSY REPORT"; position: absolute; top: -10px; left: 10px; background: #000; padding: 0 5px; font-size: 10px; color: var(--blood); }
     </style>
 </head>
 <body onclick="TerminalAudio.init()">
@@ -71,258 +73,114 @@
 
     <div id="endScreen">
         <div id="endTitle" style="font-family:'Bebas Neue'; font-size:10vw; line-height:0.8;"></div>
-        <div id="endMsg" style="font-family:'Special Elite'; font-size:16px; color:#555; max-width:80%; margin-top:20px;"></div>
+        <div id="diagnosis" class="diag-box"></div>
         <button class="btn" onclick="location.reload()" style="margin-top:40px;">REBOOT</button>
     </div>
 
     <script>
-        const MASTER_WORDS = [
-            "Гниль", "Трепанация", "Метастаз", "Некроз", "Судороги", "Асфиксия", "Распад", "Паразит", "Инъекция", "Токсин",
-            "Гангрена", "Плесень", "Опухоль", "Личинка", "Пытка", "Ампутация", "Рвота", "Шрам", "Гной", "Труп",
-            "Кома", "Фантом", "Перелом", "Вирус", "Спазм", "Безумие", "Кадавр", "Слизь", "Мутация", "Агония",
-            "Слепота", "Удушье", "Сепсис", "Амнезия", "Психоз", "Фобия", "Каннибал", "Морг", "Петля", "Бездна",
-            "Пустота", "Эрозия", "Травма", "Шизофрения", "Паралич", "Невроз", "Кошмар", "Паника", "Тремор", "Обморок",
-            "Заражение", "Тлен", "Ожог", "Галлюцинация", "Стигматы", "Ритуал", "Жертва", "Алтарь", "Проклятие", "Демон",
-            "Мрак", "Тень", "Одержимость", "Шепот", "Скрежет", "Вопль", "Смерть", "Погребение", "Могила", "Склеп",
-            "Саван", "Пепел", "Ужас", "Страх", "Боль", "Отчаяние", "Гнев", "Порок", "Грех", "Вина",
-            "Палач", "Тиски", "Игла", "Скальпель", "Пила", "Крюк", "Цепь", "Клетка", "Подвал", "Чердак",
-            "Лабиринт", "Зеркало", "Маска", "Лицо", "Глаза", "Зубы", "Когти", "Кость", "Кровь", "Плоть",
-            "Кожа", "Волосы", "Нерв", "Мозг", "Сердце", "Легкие", "Почка", "Печень", "Желудок", "Кишечник",
-            "Язва", "Нарыв", "Свищ", "Грыжа", "Отек", "Тромб", "Инфаркт", "Инсульт", "Рак", "Диагноз",
-            "Рецидив", "Клиника", "Палата", "Изолятор", "Смирительная", "Лоботомия", "Электрошок", "Препарат", "Доза", "Яд",
-            "Ртуть", "Кислота", "Щелочь", "Радиация", "Изотоп", "Мутант", "Гибрид", "Клон", "Орган", "Донор",
-            "Трансплантат", "Имплант", "Протез", "Сенсор", "Чип", "Провод", "Ток", "Разряд", "Импульс", "Сигнал",
-            "Шум", "Помеха", "Глюк", "Ошибка", "Сбой", "Отказ", "Крах", "Коллапс", "Взрыв", "Пламя",
-            "Дым", "Газ", "Пыль", "Грязь", "Мусор", "Отходы", "Стоки", "Канализация", "Крыса", "Насекомое",
-            "Паук", "Клещ", "Червь", "Пиявка", "Оса", "Рой", "Улей", "Гнездо", "Нора", "Ловушка",
-            "Капкан", "Петля", "Узел", "Верёвка", "Нож", "Бритва", "Шило", "Топор", "Молот", "Гвоздь"
-        ];
+        const MASTER_WORDS = ["Гниль", "Трепанация", "Метастаз", "Некроз", "Судороги", "Асфиксия", "Распад", "Паразит", "Инъекция", "Токсин", "Гангрена", "Плесень", "Опухоль", "Личинка", "Пытка", "Ампутация", "Рвота", "Шрам", "Гной", "Труп", "Кома", "Фантом", "Перелом", "Вирус", "Спазм", "Безумие", "Кадавр", "Слизь", "Мутация", "Агония", "Слепота", "Удушье", "Сепсис", "Амнезия", "Психоз", "Фобия", "Каннибал", "Морг", "Петля", "Бездна", "Пустота", "Эрозия", "Травма", "Шизофрения", "Паралич", "Невроз", "Кошмар", "Паника", "Тремор", "Обморок", "Заражение", "Тлен", "Ожог", "Галлюцинация", "Стигматы", "Ритуал", "Жертва", "Алтарь", "Проклятие", "Демон", "Мрак", "Тень", "Одержимость", "Шепот", "Скрежет", "Вопль", "Смерть", "Погребение", "Могила", "Склеп", "Саван", "Пепел", "Ужас", "Страх", "Боль", "Отчаяние", "Гнев", "Порок", "Грех", "Вина", "Палач", "Тиски", "Игла", "Скальпель", "Пила", "Крюк", "Цепь", "Клетка", "Подвал", "Чердак", "Лабиринт", "Зеркало", "Маска", "Лицо", "Глаза", "Зубы", "Когти", "Кость", "Кровь", "Плоть", "Кожа", "Волосы", "Нерв", "Мозг", "Сердце", "Легкие", "Почка", "Печень", "Желудок", "Кишечник", "Язва", "Нарыв", "Свищ", "Грыжа", "Отек", "Тромб", "Инфаркт", "Инсульт", "Рак", "Диагноз", "Рецидив", "Клиника", "Палата", "Изолятор", "Смирительная", "Лоботомия", "Электрошок", "Препарат", "Доза", "Яд", "Ртуть", "Кислота", "Щелочь", "Радиация", "Изотоп", "Мутант", "Гибрид", "Клон", "Орган", "Донор", "Трансплантат", "Имплант", "Протез", "Сенсор", "Чип", "Провод", "Ток", "Разряд", "Импульс", "Сигнал", "Шум", "Помеха", "Глюк", "Ошибка", "Сбой", "Отказ", "Крах", "Коллапс", "Взрыв", "Пламя", "Дым", "Газ", "Пыль", "Грязь", "Мусор", "Отходы", "Стоки", "Канализация", "Крыса", "Насекомое", "Паук", "Клещ", "Червь", "Пиявка", "Оса", "Рой", "Улей", "Гнездо", "Нора", "Ловушка", "Капкан", "Петля", "Узел", "Верёвка", "Нож", "Бритва", "Шило", "Топор", "Молот", "Гвоздь"];
 
         const TerminalAudio = {
-            ctx: null, masterGain: null, ambientStarted: false, heartbeatTimer: null, bpm: 60,
-            init() {
-                if (this.ctx) return;
-                this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-                this.masterGain = this.ctx.createGain();
-                this.masterGain.connect(this.ctx.destination);
-                this.startAmbient();
-            },
-            startAmbient() {
-                if (this.ambientStarted) return;
-                this.ambientStarted = true;
-                const osc = this.ctx.createOscillator();
-                const g = this.ctx.createGain();
-                osc.frequency.value = 40; g.gain.value = 0.03;
-                osc.connect(g); g.connect(this.masterGain);
-                osc.start();
-            },
-            startHeartbeat() {
-                if(this.heartbeatTimer) return;
-                const beat = () => {
-                    this.playHeartSound();
-                    const filledCells = gState ? gState.board.filter(c => c !== 0 && c !== 3).length : 0;
-                    this.bpm = 60 + (filledCells * 7);
-                    this.heartbeatTimer = setTimeout(beat, (60 / this.bpm) * 1000);
-                };
-                beat();
-            },
+            ctx: null, masterGain: null, heartbeatTimer: null, bpm: 60,
+            init() { if (this.ctx) return; this.ctx = new (window.AudioContext || window.webkitAudioContext)(); this.masterGain = this.ctx.createGain(); this.masterGain.connect(this.ctx.destination); this.startAmbient(); },
+            startAmbient() { const osc = this.ctx.createOscillator(); const g = this.ctx.createGain(); osc.frequency.value = 40; g.gain.value = 0.03; osc.connect(g); g.connect(this.masterGain); osc.start(); },
+            startHeartbeat() { if(this.heartbeatTimer) return; const beat = () => { this.playHeartSound(); let f = gState ? gState.board.filter(c => c !== 0 && c !== 3).length : 0; this.bpm = 60 + (f * 9); this.heartbeatTimer = setTimeout(beat, (60 / this.bpm) * 1000); }; beat(); },
             stopHeartbeat() { clearTimeout(this.heartbeatTimer); this.heartbeatTimer = null; },
             playHeartSound() {
                 const playShot = (freq, vol, delay) => {
                     const osc = this.ctx.createOscillator(); const g = this.ctx.createGain();
                     osc.type = 'sine'; osc.frequency.setValueAtTime(freq, this.ctx.currentTime + delay);
                     osc.frequency.exponentialRampToValueAtTime(1, this.ctx.currentTime + delay + 0.1);
-                    g.gain.setValueAtTime(vol, this.ctx.currentTime + delay);
-                    g.gain.linearRampToValueAtTime(0, this.ctx.currentTime + delay + 0.1);
-                    osc.connect(g); g.connect(this.masterGain);
-                    osc.start(this.ctx.currentTime + delay); osc.stop(this.ctx.currentTime + delay + 0.1);
+                    g.gain.setValueAtTime(vol, this.ctx.currentTime + delay); g.gain.linearRampToValueAtTime(0, this.ctx.currentTime + delay + 0.1);
+                    osc.connect(g); g.connect(this.masterGain); osc.start(this.ctx.currentTime + delay); osc.stop(this.ctx.currentTime + delay + 0.1);
                 };
                 playShot(55, 0.1, 0); playShot(40, 0.05, 0.15);
             },
-            playClick() {
-                this.init(); const osc = this.ctx.createOscillator(); const g = this.ctx.createGain();
-                osc.frequency.value = 300 + Math.random() * 100;
-                g.gain.setValueAtTime(0.04, this.ctx.currentTime);
-                g.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.1);
-                osc.connect(g); g.connect(this.masterGain);
-                osc.start(); osc.stop(this.ctx.currentTime + 0.1);
-            },
-            playDataBurst() {
-                this.init();
-                for(let i=0; i<3; i++) {
-                    setTimeout(() => {
-                        const osc = this.ctx.createOscillator(); const g = this.ctx.createGain();
-                        osc.type = 'sawtooth'; osc.frequency.value = 800 + Math.random() * 800;
-                        g.gain.setValueAtTime(0.015, this.ctx.currentTime);
-                        g.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.05);
-                        osc.connect(g); g.connect(this.masterGain);
-                        osc.start(); osc.stop(this.ctx.currentTime + 0.05);
-                    }, i * 40);
-                }
-            },
-            playStatic() {
-                this.init();
-                const buf = this.ctx.createBuffer(1, this.ctx.sampleRate * 0.3, this.ctx.sampleRate);
-                const d = buf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
-                const src = this.ctx.createBufferSource(); src.buffer = buf;
-                const g = this.ctx.createGain(); g.gain.setValueAtTime(0.03, this.ctx.currentTime);
-                g.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.3);
-                src.connect(g); g.connect(this.masterGain); src.start();
-            },
-            playDeath() {
-                this.init(); this.stopHeartbeat();
-                const osc = this.ctx.createOscillator(); const g = this.ctx.createGain();
-                osc.type = 'sine'; osc.frequency.setValueAtTime(80, this.ctx.currentTime);
-                osc.frequency.linearRampToValueAtTime(1, this.ctx.currentTime + 4);
-                g.gain.setValueAtTime(0.08, this.ctx.currentTime);
-                g.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 4);
-                osc.connect(g); g.connect(this.masterGain);
-                osc.start(); osc.stop(this.ctx.currentTime + 4);
-            }
+            playClick() { this.init(); const osc = this.ctx.createOscillator(); const g = this.ctx.createGain(); osc.frequency.value = 350; g.gain.setValueAtTime(0.04, this.ctx.currentTime); g.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.1); osc.connect(g); g.connect(this.masterGain); osc.start(); osc.stop(this.ctx.currentTime + 0.1); },
+            playDataBurst() { this.init(); for(let i=0; i<3; i++) { setTimeout(() => { const osc = this.ctx.createOscillator(); const g = this.ctx.createGain(); osc.type = 'sawtooth'; osc.frequency.value = 800 + Math.random() * 800; g.gain.setValueAtTime(0.015, this.ctx.currentTime); g.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.05); osc.connect(g); g.connect(this.masterGain); osc.start(); osc.stop(this.ctx.currentTime + 0.05); }, i * 40); } },
+            playStatic() { this.init(); const buf = this.ctx.createBuffer(1, this.ctx.sampleRate * 0.3, this.ctx.sampleRate); const d = buf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; const src = this.ctx.createBufferSource(); src.buffer = buf; const g = this.ctx.createGain(); g.gain.setValueAtTime(0.03, this.ctx.currentTime); g.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.3); src.connect(g); g.connect(this.masterGain); src.start(); },
+            playDeath() { this.init(); this.stopHeartbeat(); const osc = this.ctx.createOscillator(); const g = this.ctx.createGain(); osc.frequency.setValueAtTime(75, this.ctx.currentTime); osc.frequency.linearRampToValueAtTime(1, this.ctx.currentTime + 4.5); g.gain.setValueAtTime(0.08, this.ctx.currentTime); g.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 4.5); osc.connect(g); g.connect(this.masterGain); osc.start(); osc.stop(this.ctx.currentTime + 4.5); }
         };
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyCE7WDfmIi5sMGpZpfLSi5vjpL7Mn2aLtA",
-            authDomain: "fidelity-18c8a.firebaseapp.com",
-            databaseURL: "https://fidelity-18c8a-default-rtdb.europe-west1.firebasedatabase.app",
-            projectId: "fidelity-18c8a",
-            storageBucket: "fidelity-18c8a.firebasestorage.app",
-            messagingSenderId: "295762947740",
-            appId: "1:295762947740:web:d059946a791238352ec759"
-        };
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
+        const firebaseConfig = { apiKey: "AIzaSyCE7WDfmIi5sMGpZpfLSi5vjpL7Mn2aLtA", authDomain: "fidelity-18c8a.firebaseapp.com", databaseURL: "https://fidelity-18c8a-default-rtdb.europe-west1.firebasedatabase.app", projectId: "fidelity-18c8a", storageBucket: "fidelity-18c8a.firebasestorage.app", messagingSenderId: "295762947740", appId: "1:295762947740:web:d059946a791238352ec759" };
+        firebase.initializeApp(firebaseConfig); const db = firebase.database();
 
-        let gId = "", pNum = 0, gState = null, lang = 'ru', isBotMode = false;
-        let sessionWords = [];
+        let gId = "", pNum = 0, gState = null, lang = 'ru', isBotMode = false, sessionWords = [];
 
         const TEXTS = {
-            ru: { single: "ОДИНОЧНЫЙ СЕАНС", create:"СОЗДАТЬ ЛОББИ", join:"ПОДКЛЮЧИТЬСЯ", start:"ВОЙТИ", back:"НАЗАД", roll:"КУРОК", wait:"ОЖИДАНИЕ СУБЪЕКТА...", your:"ТВОЙ ХОД", enemy:"ВРАГ ЦЕЛИТСЯ...", botTurn: "ТЕРМИНАЛ ДУМАЕТ...", winT:"ВЫЖИЛ", winM:"Система стабильна.", loseT:"СТЕРТ", loseM:"Утилизация завершена.", instr: "1. Жми КУРОК.<br>2. Цифра — колонка.<br>3. 6 — любая клетка." },
-            en: { single: "SINGLE SESSION", create:"CREATE LOBBY", join:"CONNECT", start:"ENTER", back:"BACK", roll:"TRIGGER", wait:"AWAITING...", your:"YOUR TURN", enemy:"ENEMY AIMING...", botTurn: "TERMINAL THINKING...", winT:"STABLE", winM:"Subject stable.", loseT:"ERASED", loseM:"Disposal complete.", instr: "1. Pull TRIGGER.<br>2. Num is column.<br>3. 6 is free choice." }
+            ru: { single: "ОДИНОЧНЫЙ СЕАНС", create:"СОЗДАТЬ ЛОББИ", join:"ПОДКЛЮЧИТЬСЯ", start:"ВОЙТИ", back:"НАЗАД", roll:"КУРОК", wait:"ОЖИДАНИЕ СУБЪЕКТА...", your:"ТВОЙ ХОД", enemy:"ВРАГ ЦЕЛИТСЯ...", botTurn: "ТЕРМИНАЛ ДУМАЕТ...", winT:"ВЫЖИЛ", winM: "Протокол завершен успешно. Субъект стабилен.", loseT:"СТЕРТ", instr: "1. Жми КУРОК.<br>2. Цифра — колонка.<br>3. 6 — любая клетка." },
+            en: { single: "SINGLE SESSION", create:"CREATE LOBBY", join:"CONNECT", start:"ENTER", back:"BACK", roll:"TRIGGER", wait:"AWAITING...", your:"YOUR TURN", enemy:"ENEMY AIMING...", botTurn: "TERMINAL THINKING...", winT:"STABLE", winM: "Protocol finished. Subject stable.", loseT:"ERASED", instr: "1. Pull TRIGGER.<br>2. Num is column.<br>3. 6 is free choice." }
         };
 
-        function generateSessionWords() {
-            let shuffled = [...MASTER_WORDS].sort(() => 0.5 - Math.random());
-            return shuffled.slice(0, 25);
-        }
+        function generateSessionWords() { return [...MASTER_WORDS].sort(() => 0.5 - Math.random()).slice(0, 25); }
 
         function toggleLanguage() {
-            TerminalAudio.playClick();
-            lang = lang === 'ru' ? 'en' : 'ru';
+            TerminalAudio.playClick(); lang = lang === 'ru' ? 'en' : 'ru';
             document.querySelectorAll('[data-t]').forEach(el => el.innerHTML = TEXTS[lang][el.getAttribute('data-t')] || el.innerText);
-            document.getElementById('tInstr').innerHTML = TEXTS[lang].instr;
-            if(gState) updateUI();
+            document.getElementById('tInstr').innerHTML = TEXTS[lang].instr; if(gState) updateUI();
         }
 
-        function switchScreen(s) {
-            TerminalAudio.playClick();
-            document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
-            document.getElementById(s).classList.add('active');
-        }
+        function switchScreen(s) { TerminalAudio.playClick(); document.querySelectorAll('.screen').forEach(el => el.classList.remove('active')); document.getElementById(s).classList.add('active'); }
 
         function startSinglePlayer() {
-            TerminalAudio.playClick();
-            isBotMode = true; pNum = 1; gId = "LOCAL_BOT";
-            sessionWords = generateSessionWords();
+            TerminalAudio.playClick(); isBotMode = true; pNum = 1; sessionWords = generateSessionWords();
             gState = { board: Array(25).fill(0), turn: 1, roll: 0, players: 2, winner: 0, words: sessionWords };
-            gState.board[12] = 3;
-            switchScreen('scrGame');
-            document.getElementById('displayId').innerText = "MODE: SYSTEM_FAILURE";
-            TerminalAudio.startHeartbeat();
-            drawGrid(); updateUI();
+            gState.board[12] = 3; switchScreen('scrGame'); document.getElementById('displayId').innerText = "MODE: ELIMINATION";
+            TerminalAudio.startHeartbeat(); drawGrid(); updateUI();
         }
 
         function startHost() {
-            TerminalAudio.playClick();
-            isBotMode = false;
-            gId = Math.random().toString(36).substring(2, 7).toUpperCase();
-            pNum = 1;
+            isBotMode = false; gId = Math.random().toString(36).substring(2, 7).toUpperCase(); pNum = 1;
             sessionWords = generateSessionWords();
             const data = { board: Array(25).fill(0), turn: 1, roll: 0, players: 1, winner: 0, words: sessionWords };
-            data.board[12] = 3;
-            db.ref('games/' + gId).set(data).then(() => { listen(); TerminalAudio.startHeartbeat(); });
+            data.board[12] = 3; db.ref('games/' + gId).set(data).then(() => { listen(); TerminalAudio.startHeartbeat(); });
         }
 
         function startJoin() {
-            TerminalAudio.playClick();
-            isBotMode = false;
-            gId = document.getElementById('joinInput').value.trim().toUpperCase();
-            if(!gId) return;
-            pNum = 2;
-            db.ref('games/' + gId).once('value', s => {
-                if(s.exists()){
-                    db.ref('games/' + gId).update({ players: 2 });
-                    listen(); TerminalAudio.startHeartbeat();
-                } else { TerminalAudio.playDeath(); }
-            });
+            isBotMode = false; gId = document.getElementById('joinInput').value.trim().toUpperCase(); if(!gId) return; pNum = 2;
+            db.ref('games/' + gId).once('value', s => { if(s.exists()){ db.ref('games/' + gId).update({ players: 2 }); listen(); TerminalAudio.startHeartbeat(); } else { TerminalAudio.playDeath(); } });
         }
 
-        function listen() {
-            switchScreen('scrGame');
-            document.getElementById('displayId').innerText = "SESSION: " + gId;
-            db.ref('games/' + gId).on('value', s => {
-                gState = s.val();
-                if(!gState) return;
-                sessionWords = gState.words; // Синхронизируем слова
-                drawGrid(); updateUI();
-                if(gState.winner) showEnd(gState.winner === pNum);
-            });
-        }
+        function listen() { switchScreen('scrGame'); db.ref('games/' + gId).on('value', s => { gState = s.val(); if(!gState) return; sessionWords = gState.words; drawGrid(); updateUI(); if(gState.winner) showEnd(gState.winner === pNum); }); }
 
         function updateUI() {
-            const statusEl = document.getElementById('gameStatus');
-            const btn = document.getElementById('rollBtn');
-            if(gState.winner) return;
+            const statusEl = document.getElementById('gameStatus'); const btn = document.getElementById('rollBtn'); if(gState.winner) return;
             const isMyTurn = gState.turn === pNum;
-            if(isBotMode && gState.turn === 2) {
-                statusEl.innerText = TEXTS[lang].botTurn;
-                btn.disabled = true;
-                setTimeout(botMove, 1000);
-            } else if(gState.players < 2) {
-                statusEl.innerText = TEXTS[lang].wait;
-                btn.disabled = true;
-            } else {
-                statusEl.innerText = isMyTurn ? TEXTS[lang].your : TEXTS[lang].enemy;
-                btn.disabled = !isMyTurn || gState.roll !== 0;
-            }
+            if(isBotMode && gState.turn === 2) { statusEl.innerText = TEXTS[lang].botTurn; btn.disabled = true; setTimeout(botMove, 700); }
+            else if(gState.players < 2) { statusEl.innerText = TEXTS[lang].wait; btn.disabled = true; }
+            else { statusEl.innerText = isMyTurn ? TEXTS[lang].your : TEXTS[lang].enemy; btn.disabled = !isMyTurn || gState.roll !== 0; }
             document.getElementById('rollVal').innerText = gState.roll || "—";
         }
 
-        function triggerRoll() {
-            TerminalAudio.playStatic();
-            const r = Math.floor(Math.random() * 6) + 1;
-            if(isBotMode) { gState.roll = r; drawGrid(); updateUI(); }
-            else { db.ref('games/' + gId).update({ roll: r }); }
-        }
+        function triggerRoll() { TerminalAudio.playStatic(); const r = Math.floor(Math.random() * 6) + 1; if(isBotMode) { gState.roll = r; updateUI(); } else { db.ref('games/' + gId).update({ roll: r }); } }
 
         function occupy(i) {
             if(gState.turn !== pNum || !gState.roll || gState.board[i] !== 0) return;
-            const col = i % 5;
-            if(gState.roll !== 6 && col !== (gState.roll - 1)) return;
-            TerminalAudio.playDataBurst();
-            gState.board[i] = pNum;
-            gState.turn = isBotMode ? 2 : (pNum === 1 ? 2 : 1);
-            gState.roll = 0;
+            if(gState.roll !== 6 && (i % 5) !== (gState.roll - 1)) return;
+            TerminalAudio.playDataBurst(); gState.board[i] = pNum; gState.turn = isBotMode ? 2 : (pNum === 1 ? 2 : 1); gState.roll = 0;
             gState.winner = checkWin(gState.board) ? pNum : 0;
-            if(isBotMode) { drawGrid(); updateUI(); if(gState.winner) showEnd(true); }
-            else { db.ref('games/' + gId).update(gState); }
+            if(isBotMode) { drawGrid(); updateUI(); if(gState.winner) showEnd(true); } else { db.ref('games/' + gId).update(gState); }
         }
 
         function botMove() {
             if(!isBotMode || gState.turn !== 2 || gState.winner) return;
-            const r = Math.floor(Math.random() * 6) + 1;
-            gState.roll = r;
-            let moves = [];
-            gState.board.forEach((v, idx) => { if(v === 0 && (r === 6 || (idx % 5 === r - 1))) moves.push(idx); });
-            if(moves.length > 0) {
-                const choice = moves[Math.floor(Math.random() * moves.length)];
-                gState.board[choice] = 2;
-                TerminalAudio.playDataBurst();
+            const r = Math.floor(Math.random() * 6) + 1; gState.roll = r;
+            let avail = []; gState.board.forEach((v, idx) => { if(v === 0 && (r === 6 || (idx % 5 === r - 1))) avail.push(idx); });
+            if(avail.length > 0) {
+                let choice = avail[0]; let maxWeight = -1;
+                for(let idx of avail) {
+                    let weight = 0;
+                    let tempWin = [...gState.board]; tempWin[idx] = 2; if(checkWin(tempWin)) { weight = 100; }
+                    let tempBlock = [...gState.board]; tempBlock[idx] = 1; if(checkWin(tempBlock)) { weight = 50; }
+                    // Стратегия центра и углов
+                    if(idx === 12) weight += 10;
+                    if([0,4,20,24].includes(idx)) weight += 5;
+                    if(weight >= maxWeight) { maxWeight = weight; choice = idx; }
+                }
+                gState.board[choice] = 2; TerminalAudio.playDataBurst();
             }
-            gState.turn = 1; gState.roll = 0;
-            gState.winner = checkWin(gState.board) ? 2 : 0;
-            drawGrid(); updateUI();
-            if(gState.winner) showEnd(false);
+            gState.turn = 1; gState.roll = 0; gState.winner = checkWin(gState.board) ? 2 : 0;
+            drawGrid(); updateUI(); if(gState.winner) showEnd(false);
         }
 
         function checkWin(b) {
@@ -331,25 +189,35 @@
         }
 
         function drawGrid() {
-            const g = document.getElementById('mainGrid');
-            if(!g || !sessionWords) return;
-            g.innerHTML = '';
+            const g = document.getElementById('mainGrid'); if(!g || !sessionWords) return; g.innerHTML = '';
             gState.board.forEach((v, i) => {
-                const cell = document.createElement('div');
-                cell.className = 'cell' + (v===1?' p1':v===2?' p2':v===3?' free':'');
-                cell.innerText = v === 3 ? "SYSTEM" : (sessionWords[i] || "---");
-                cell.onclick = () => occupy(i);
-                g.appendChild(cell);
+                const cell = document.createElement('div'); cell.className = 'cell' + (v===1?' p1':v===2?' p2':v===3?' free':'');
+                cell.innerText = v === 3 ? "VOID" : sessionWords[i]; cell.onclick = () => occupy(i); g.appendChild(cell);
             });
         }
 
         function showEnd(isWin) {
-            TerminalAudio.stopHeartbeat();
-            if (!isWin) TerminalAudio.playDeath();
-            else TerminalAudio.playDataBurst();
+            TerminalAudio.stopHeartbeat(); if (!isWin) TerminalAudio.playDeath(); else TerminalAudio.playDataBurst();
             document.getElementById('endTitle').innerText = isWin ? TEXTS[lang].winT : TEXTS[lang].loseT;
             document.getElementById('endTitle').style.color = isWin ? "#0af" : "#f00";
-            document.getElementById('endMsg').innerText = isWin ? TEXTS[lang].winM : TEXTS[lang].loseM;
+            const diag = document.getElementById('diagnosis'); diag.innerText = "";
+            if(!isWin) {
+                const enemyNum = pNum === 1 ? 2 : 1;
+                const w = gState.board.map((v, i) => v === enemyNum ? sessionWords[i].toUpperCase() : null)
+                                     .filter(v => v).sort(() => 0.5 - Math.random());
+                const s = {
+                    0: w[0] || "СБОЙ", 1: w[1] || "ПУСТОТА", 2: w[2] || "ТЛЕН", 3: w[3] || "МРАК", 4: w[4] || "КОНЕЦ"
+                };
+                const report = [
+                    `Критическое поражение. Ваш ${s[0]} был полностью разрушен, когда в системе возникла ${s[1]}. Это спровоцировало мгновенный ${s[2]}, перешедший в стадию ${s[3]}. Последнее, что зафиксировали сенсоры — терминальный ${s[4]}.`,
+                    `Объект утилизирован. Первичный ${s[0]} вызвал цепную реакцию, в ходе которой ${s[1]} вступил в конфликт с ${s[2]}. В результате зафиксирована полная ${s[3]} и необратимый ${s[4]}.`,
+                    `Протокол вскрытия: внутри обнаружен ${s[0]}, поглощающий ${s[1]}. Попытка стабилизации через ${s[2]} провалена. Итог: тотальный ${s[3]} и разрыв через ${s[4]}.`
+                ];
+                let fullText = report[Math.floor(Math.random() * report.length)];
+                let i = 0;
+                const type = () => { if(i < fullText.length) { diag.innerText += fullText[i++]; setTimeout(type, 30); } };
+                type();
+            } else { diag.innerText = TEXTS[lang].winM; }
             document.getElementById('endScreen').style.display = 'flex';
             if(!isBotMode) db.ref('games/' + gId).remove();
         }
