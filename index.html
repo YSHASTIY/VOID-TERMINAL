@@ -360,7 +360,8 @@
 
         function listen() {
             switchScreen('scrGame'); renderInstructions(); document.getElementById('displayId').innerText = "SESSION: " + gId;
-            db.ref('games/' + gId).on('value', s => {
+            const ref = db.ref('games/' + gId);
+            ref.on('value', s => {
                 gState = s.val(); if(!gState) return; sessionWords = gState.words; 
                 document.getElementById('displayOpponent').innerText = pNum === 1 ? (gState.p2Nick || "WAITING...") : gState.p1Nick;
                 
@@ -368,7 +369,10 @@
                 TerminalAudio.updatePulse(occupiedCount);
                 
                 drawGrid(); updateUI();
-                if(gState.winner) showEnd(gState.winner === pNum);
+                if(gState.winner) {
+                    ref.off(); // Отписываемся от Firebase, чтобы не перезатереть финальный экран
+                    showEnd(gState.winner === pNum);
+                }
             });
         }
 
@@ -496,7 +500,9 @@
             document.getElementById('endTitle').innerText = isWin ? TEXTS[lang].winT : TEXTS[lang].loseT;
             document.getElementById('endTitle').style.color = isWin ? "#0af" : "#f00";
             document.getElementById('endMsg').innerText = isWin ? TEXTS[lang].winM : TEXTS[lang].loseM;
-            switchScreen('endScreen'); document.getElementById('endScreen').style.display = 'flex';
+            // Скрываем все экраны и показываем финальный
+            document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+            document.getElementById('endScreen').style.display = 'flex';
         }
     </script>
 </body>
