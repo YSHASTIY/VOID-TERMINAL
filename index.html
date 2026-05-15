@@ -486,6 +486,8 @@
         }
 
         function showEnd(isWin) {
+            gState.winner = gState.winner || (isWin ? pNum : (pNum === 1 ? 2 : 1));
+            drawGrid(); updateUI();
             if (!isWin) {
                 TerminalAudio.playTvOff();
                 document.body.classList.add('tv-off');
@@ -493,16 +495,18 @@
                     document.body.classList.remove('tv-off');
                     renderFinal(isWin);
                 }, 600);
-            } else { renderFinal(isWin); }
+            } else {
+                renderFinal(isWin);
+            }
         }
 
         function renderFinal(isWin) {
             document.getElementById('endTitle').innerText = isWin ? TEXTS[lang].winT : TEXTS[lang].loseT;
             document.getElementById('endTitle').style.color = isWin ? "#0af" : "#f00";
             document.getElementById('endMsg').innerText = isWin ? TEXTS[lang].winM : TEXTS[lang].loseM;
-            // Скрываем все экраны и показываем финальный
             document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
-            document.getElementById('endScreen').style.display = 'flex';
+            const endEl = document.getElementById('endScreen');
+            endEl.style.cssText = 'display:flex; position:fixed; inset:0; z-index:9999; background:#000; flex-direction:column; align-items:center; justify-content:center; text-align:center;';
         }
     </script>
 </body>
