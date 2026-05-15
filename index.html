@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>VOID TERMINAL | ELITE AI</title>
+    <title>VOID TERMINAL | NETWORK</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
@@ -19,22 +19,29 @@
         .screen { display: none; width: 100vw; height: 100vh; flex-direction: column; align-items: center; justify-content: center; padding: 20px; z-index: 10; position: relative; }
         .screen.active { display: flex; }
         
-        .logo { font-family: 'Bebas Neue'; font-size: clamp(50px, 12vw, 90px); color: var(--blood); text-shadow: 0 0 20px var(--blood); line-height: 0.8; text-align: center; margin-bottom: 20px; }
+        .logo { font-family: 'Bebas Neue'; font-size: clamp(40px, 10vw, 80px); color: var(--blood); text-shadow: 0 0 20px var(--blood); line-height: 0.8; text-align: center; margin-bottom: 20px; }
         
-        .btn { font-family: 'Bebas Neue'; font-size: 24px; background: #1a0000; border: 2px solid var(--blood); color: var(--blood); padding: 12px; width: 100%; max-width: 320px; margin: 8px; transition: 0.2s; letter-spacing: 2px; z-index: 20; outline: none; }
+        .btn { font-family: 'Bebas Neue'; font-size: 22px; background: #1a0000; border: 2px solid var(--blood); color: var(--blood); padding: 10px; width: 100%; max-width: 300px; margin: 5px; transition: 0.2s; letter-spacing: 2px; z-index: 20; outline: none; }
         .btn:hover:not(:disabled) { background: var(--blood); color: #fff; box-shadow: 0 0 30px var(--blood); }
-        .btn:disabled { opacity: 0.1; filter: grayscale(1); }
+        .btn:disabled { opacity: 0.1; }
         
-        .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; width: 100%; max-width: 450px; aspect-ratio: 1/1; background: #111; padding: 6px; border: 1px solid #300; }
+        .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; width: 100%; max-width: 420px; aspect-ratio: 1/1; background: #111; padding: 6px; border: 1px solid #300; }
         .cell { background: #080000; border: 1px solid #222; display: flex; align-items: center; justify-content: center; text-align: center; font-size: clamp(6px, 1.8vw, 9px); color: #444; aspect-ratio: 1/1; overflow: hidden; padding: 2px; text-transform: uppercase; }
         .cell.p1 { background: var(--blood); color: #fff; border-color: #f00; }
         .cell.p2 { background: #004; color: #fff; border-color: var(--neon); }
         .cell.free { color: var(--blood); border: 1px dashed var(--blood); font-weight: bold; }
         
-        .panel { background: var(--panel); border: 1px solid #400; padding: 20px; width: 280px; font-size: 13px; border-left: 4px solid var(--blood); }
-        #rollVal { width: 65px; height: 65px; border: 2px solid var(--blood); display: flex; align-items: center; justify-content: center; font-family: 'Bebas Neue'; font-size: 36px; color: #f00; background: #000; }
+        .panel { background: var(--panel); border: 1px solid #400; padding: 15px; width: 280px; font-size: 13px; border-left: 4px solid var(--blood); }
+        #rollVal { width: 60px; height: 60px; border: 2px solid var(--blood); display: flex; align-items: center; justify-content: center; font-family: 'Bebas Neue'; font-size: 32px; color: #f00; background: #000; }
         
+        .lobby-list { width: 100%; max-width: 400px; height: 300px; overflow-y: auto; background: rgba(20,0,0,0.5); border: 1px solid #300; margin: 20px 0; padding: 10px; }
+        .lobby-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #200; font-family: 'Share Tech Mono'; color: var(--neon); }
+        .lobby-item:hover { background: #100; }
+
         #endScreen { position: fixed; inset: 0; background: #000; z-index: 5000; display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+        
+        .copy-chip { font-size: 10px; background: #222; color: #888; padding: 2px 6px; margin-left: 10px; border: 1px solid #444; cursor: pointer; vertical-align: middle; }
+        .copy-chip:active { background: var(--neon); color: #000; }
     </style>
 </head>
 <body onclick="TerminalAudio.init()">
@@ -49,21 +56,31 @@
         <button class="btn" onclick="startSinglePlayer()" style="border-color: var(--neon); color: var(--neon);" data-t="single">ОДИНОЧНЫЙ СЕАНС</button>
         <button class="btn" onclick="startHost()" data-t="create">СОЗДАТЬ ЛОББИ</button>
         <button class="btn" onclick="switchScreen('scrJoin')" data-t="join">ПОДКЛЮЧИТЬСЯ</button>
+        <button class="btn" onclick="openLobbyBrowser()" style="font-size: 16px; border-style: dotted;" data-t="list">СПИСОК ЛОББИ</button>
     </div>
 
     <div id="scrJoin" class="screen">
-        <input type="text" id="joinInput" placeholder="ID..." style="background:#000; border:1px solid #500; color:var(--neon); padding:15px; width:300px; text-align:center; font-size:22px; font-family:inherit; outline:none; margin-bottom:20px;">
-        <button class="btn" onclick="startJoin()" data-t="start">ВОЙТИ</button>
+        <input type="text" id="joinInput" maxlength="5" placeholder="ID..." style="background:#000; border:1px solid #500; color:var(--neon); padding:15px; width:200px; text-align:center; font-size:22px; font-family:inherit; outline:none; margin-bottom:20px; text-transform: uppercase;">
+        <button class="btn" onclick="startJoin(document.getElementById('joinInput').value)" data-t="start">ВОЙТИ</button>
         <button class="btn" style="border:none; color:#444" onclick="switchScreen('scrMenu')" data-t="back">НАЗАД</button>
+    </div>
+
+    <div id="scrLobby" class="screen">
+        <div class="logo" style="font-size: 40px;">ACTIVE NODES</div>
+        <div class="lobby-list" id="lobbyList"></div>
+        <button class="btn" onclick="switchScreen('scrMenu')" data-t="back">НАЗАД</button>
     </div>
 
     <div id="scrGame" class="screen">
         <div style="display:flex; gap:20px; flex-wrap:wrap; justify-content:center;">
             <div class="panel">
-                <div id="displayId" style="color: var(--neon); font-size: 16px; margin-bottom: 10px;">ID: ...</div>
-                <hr style="border:0; border-top:1px solid #311;">
+                <div style="display:flex; justify-content: space-between; align-items: center;">
+                    <div id="displayId" style="color: var(--neon); font-size: 14px;">ID: ...</div>
+                    <span id="copyBtn" class="copy-chip" onclick="copyId()">COPY</span>
+                </div>
+                <hr style="border:0; border-top:1px solid #311; margin: 10px 0;">
                 <b id="tProt" style="color:var(--blood)">ИНСТРУКЦИИ:</b>
-                <div id="tInstr" style="color:#666; margin-top:8px; line-height:1.4; font-size:12px;"></div>
+                <div id="tInstr" style="color:#666; margin-top:8px; line-height:1.4; font-size:11px;"></div>
             </div>
             <div style="display:flex; flex-direction:column; align-items:center;">
                 <div id="gameStatus" style="color: #f00; margin-bottom: 10px; font-family:'Special Elite'; height: 20px;"></div>
@@ -87,37 +104,10 @@
 
         const TerminalAudio = {
             ctx: null, masterGain: null, heartbeatTimer: null, bpm: 60,
-            init() {
-                if (this.ctx) return;
-                this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-                this.masterGain = this.ctx.createGain(); this.masterGain.connect(this.ctx.destination);
-                const osc = this.ctx.createOscillator(); const g = this.ctx.createGain();
-                osc.frequency.value = 40; g.gain.value = 0.03; osc.connect(g); g.connect(this.masterGain); osc.start();
-            },
-            startHeartbeat() {
-                const beat = () => {
-                    const o = this.ctx.createOscillator(); const g = this.ctx.createGain();
-                    o.frequency.setValueAtTime(55, this.ctx.currentTime);
-                    g.gain.setValueAtTime(0.1, this.ctx.currentTime);
-                    g.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.1);
-                    o.connect(g); g.connect(this.masterGain); o.start(); o.stop(this.ctx.currentTime + 0.1);
-                    const filled = gState ? gState.board.filter(c => c !== 0 && c !== 3).length : 0;
-                    this.bpm = 60 + (filled * 6);
-                    this.heartbeatTimer = setTimeout(beat, (60 / this.bpm) * 1000);
-                }; beat();
-            },
-            playDataBurst() {
-                const o = this.ctx.createOscillator(); const g = this.ctx.createGain();
-                o.type = 'sawtooth'; o.frequency.value = 1000; g.gain.setValueAtTime(0.01, this.ctx.currentTime);
-                g.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.05);
-                o.connect(g); g.connect(this.masterGain); o.start(); o.stop(this.ctx.currentTime + 0.05);
-            },
-            playStatic() {
-                const o = this.ctx.createOscillator(); const g = this.ctx.createGain();
-                o.type = 'square'; o.frequency.value = 100; g.gain.setValueAtTime(0.02, this.ctx.currentTime);
-                g.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.2);
-                o.connect(g); g.connect(this.masterGain); o.start(); o.stop(this.ctx.currentTime + 0.2);
-            }
+            init() { if (this.ctx) return; this.ctx = new (window.AudioContext || window.webkitAudioContext)(); this.masterGain = this.ctx.createGain(); this.masterGain.connect(this.ctx.destination); const osc = this.ctx.createOscillator(); const g = this.ctx.createGain(); osc.frequency.value = 40; g.gain.value = 0.03; osc.connect(g); g.connect(this.masterGain); osc.start(); },
+            startHeartbeat() { const beat = () => { const o = this.ctx.createOscillator(); const g = this.ctx.createGain(); o.frequency.setValueAtTime(55, this.ctx.currentTime); g.gain.setValueAtTime(0.1, this.ctx.currentTime); g.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.1); o.connect(g); g.connect(this.masterGain); o.start(); o.stop(this.ctx.currentTime + 0.1); const filled = gState ? gState.board.filter(c => c !== 0 && c !== 3).length : 0; this.bpm = 60 + (filled * 6); this.heartbeatTimer = setTimeout(beat, (60 / this.bpm) * 1000); }; beat(); },
+            playDataBurst() { const o = this.ctx.createOscillator(); const g = this.ctx.createGain(); o.type = 'sawtooth'; o.frequency.value = 1000; g.gain.setValueAtTime(0.01, this.ctx.currentTime); g.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.05); o.connect(g); g.connect(this.masterGain); o.start(); o.stop(this.ctx.currentTime + 0.05); },
+            playStatic() { const o = this.ctx.createOscillator(); const g = this.ctx.createGain(); o.type = 'square'; o.frequency.value = 100; g.gain.setValueAtTime(0.02, this.ctx.currentTime); g.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.2); o.connect(g); g.connect(this.masterGain); o.start(); o.stop(this.ctx.currentTime + 0.2); }
         };
 
         const firebaseConfig = { apiKey: "AIzaSyCE7WDfmIi5sMGpZpfLSi5vjpL7Mn2aLtA", authDomain: "fidelity-18c8a.firebaseapp.com", databaseURL: "https://fidelity-18c8a-default-rtdb.europe-west1.firebasedatabase.app", projectId: "fidelity-18c8a" };
@@ -126,28 +116,60 @@
 
         let gId = "", pNum = 1, gState = null, lang = 'ru', isBotMode = false, sessionWords = [];
         const TEXTS = {
-            ru: { single: "ОДИНОЧНЫЙ СЕАНС", create:"СОЗДАТЬ ЛОББИ", join:"ПОДКЛЮЧИТЬСЯ", start:"ВОЙТИ", back:"НАЗАД", roll:"КУРОК", wait:"ОЖИДАНИЕ СУБЪЕКТА...", your:"ТВОЙ ХОД", enemy:"ВРАГ ЦЕЛИТСЯ...", botTurn: "ТЕРМИНАЛ ДУМАЕТ...", winT:"ВЫЖИЛ", winM:"Система стабильна.", loseT:"СТЕРТ", loseM:"Утилизация завершена.", instr: "1. Жми КУРОК.<br>2. Цифра — колонка.<br>3. 6 — любая клетка." },
-            en: { single: "SINGLE SESSION", create:"CREATE LOBBY", join:"CONNECT", start:"ENTER", back:"BACK", roll:"TRIGGER", wait:"AWAITING...", your:"YOUR TURN", enemy:"ENEMY AIMING...", botTurn: "TERMINAL THINKING...", winT:"STABLE", winM:"Subject stable.", loseT:"ERASED", loseM:"Disposal complete.", instr: "1. Pull TRIGGER.<br>2. Num is column.<br>3. 6 is free choice." }
+            ru: { list: "СПИСОК ЛОББИ", single: "ОДИНОЧНЫЙ СЕАНС", create:"СОЗДАТЬ ЛОББИ", join:"ПОДКЛЮЧИТЬСЯ", start:"ВОЙТИ", back:"НАЗАД", roll:"КУРОК", wait:"ОЖИДАНИЕ СУБЪЕКТА...", your:"ТВОЙ ХОД", enemy:"ВРАГ ЦЕЛИТСЯ...", botTurn: "ТЕРМИНАЛ ДУМАЕТ...", winT:"ВЫЖИЛ", winM:"Система стабильна.", loseT:"СТЕРТ", loseM:"Утилизация завершена.", instr: "1. Жми КУРОК.<br>2. Цифра — колонка.<br>3. 6 — любая клетка." },
+            en: { list: "LOBBY LIST", single: "SINGLE SESSION", create:"CREATE LOBBY", join:"CONNECT", start:"ENTER", back:"BACK", roll:"TRIGGER", wait:"AWAITING...", your:"YOUR TURN", enemy:"ENEMY AIMING...", botTurn: "TERMINAL THINKING...", winT:"STABLE", winM:"Subject stable.", loseT:"ERASED", loseM:"Disposal complete.", instr: "1. Pull TRIGGER.<br>2. Num is column.<br>3. 6 is free choice." }
         };
 
         function switchScreen(s) { document.querySelectorAll('.screen').forEach(el => el.classList.remove('active')); document.getElementById(s).classList.add('active'); }
         function toggleLanguage() { lang = lang === 'ru' ? 'en' : 'ru'; document.querySelectorAll('[data-t]').forEach(el => el.innerHTML = TEXTS[lang][el.getAttribute('data-t')] || el.innerText); document.getElementById('tInstr').innerHTML = TEXTS[lang].instr; if(gState) updateUI(); }
 
+        function copyId() {
+            navigator.clipboard.writeText(gId);
+            const chip = document.getElementById('copyBtn');
+            chip.innerText = "DONE";
+            setTimeout(() => chip.innerText = "COPY", 1000);
+        }
+
+        function openLobbyBrowser() {
+            switchScreen('scrLobby');
+            const listEl = document.getElementById('lobbyList');
+            listEl.innerHTML = '<div style="text-align:center; padding:20px;">SCANNING...</div>';
+            
+            db.ref('games').once('value', s => {
+                listEl.innerHTML = '';
+                const games = s.val();
+                let found = false;
+                for (let id in games) {
+                    if (games[id].players === 1 && games[id].winner === 0) {
+                        found = true;
+                        const item = document.createElement('div');
+                        item.className = 'lobby-item';
+                        item.innerHTML = `<span>NODE_${id}</span><button class="btn" style="width:80px; font-size:12px; margin:0;" onclick="startJoin('${id}')">JOIN</button>`;
+                        listEl.appendChild(item);
+                    }
+                }
+                if (!found) listEl.innerHTML = '<div style="text-align:center; padding:20px; color:#444;">NO ACTIVE NODES</div>';
+            });
+        }
+
         function startSinglePlayer() {
-            isBotMode = true; pNum = 1; sessionWords = [...MASTER_WORDS].sort(() => 0.5 - Math.random()).slice(0, 25);
+            isBotMode = true; pNum = 1; gId = "OFFLINE"; sessionWords = [...MASTER_WORDS].sort(() => 0.5 - Math.random()).slice(0, 25);
             gState = { board: Array(25).fill(0), turn: 1, roll: 0, players: 2, winner: 0, words: sessionWords };
             gState.board[12] = 3; switchScreen('scrGame'); TerminalAudio.startHeartbeat(); drawGrid(); updateUI();
+            document.getElementById('copyBtn').style.display = 'none';
         }
 
         function startHost() {
             isBotMode = false; gId = Math.random().toString(36).substring(2, 7).toUpperCase(); pNum = 1; sessionWords = [...MASTER_WORDS].sort(() => 0.5 - Math.random()).slice(0, 25);
-            const data = { board: Array(25).fill(0), turn: 1, roll: 0, players: 1, winner: 0, words: sessionWords };
+            const data = { board: Array(25).fill(0), turn: 1, roll: 0, players: 1, winner: 0, words: sessionWords, ts: Date.now() };
             data.board[12] = 3; db.ref('games/' + gId).set(data).then(() => { listen(); TerminalAudio.startHeartbeat(); });
+            document.getElementById('copyBtn').style.display = 'block';
         }
 
-        function startJoin() {
-            gId = document.getElementById('joinInput').value.trim().toUpperCase(); if(!gId) return; pNum = 2;
+        function startJoin(id) {
+            if(!id) return; gId = id.toUpperCase(); pNum = 2;
             db.ref('games/' + gId).once('value', s => { if(s.exists()){ db.ref('games/' + gId).update({ players: 2 }); listen(); TerminalAudio.startHeartbeat(); } });
+            document.getElementById('copyBtn').style.display = 'block';
         }
 
         function listen() {
@@ -212,7 +234,7 @@
         function updateUI() {
             const isMy = gState.turn === pNum;
             document.getElementById('gameStatus').innerText = isBotMode && gState.turn === 2 ? TEXTS[lang].botTurn : (isMy ? TEXTS[lang].your : TEXTS[lang].enemy);
-            document.getElementById('rollBtn').disabled = !isMy || gState.roll !== 0;
+            document.getElementById('rollBtn').disabled = !isMy || gState.roll !== 0 || gState.players < 2;
             document.getElementById('rollVal').innerText = gState.roll || "—";
             if(gState.winner) showEnd(gState.winner === pNum);
         }
